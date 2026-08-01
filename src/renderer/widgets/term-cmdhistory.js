@@ -1,7 +1,7 @@
 "use strict";
 window.I18N.register({
-    en: { "widget.cmdhistory": "Command History", "cat.terminal": "Terminal" },
-    ru: { "widget.cmdhistory": "История команд", "cat.terminal": "Терминал" }
+    en: { "widget.cmdhistory": "Command History", "cat.terminal": "Terminal", "ch.filter": "Filter history…", "ch.all": "All", "ch.showing": "showing", "ch.of": "of", "ch.empty": "History is empty.", "ch.nomatch": "No matches." },
+    ru: { "widget.cmdhistory": "История команд", "cat.terminal": "Терминал", "ch.filter": "Фильтр…", "ch.all": "Все", "ch.showing": "показано", "ch.of": "из", "ch.empty": "История пуста.", "ch.nomatch": "Ничего не найдено." }
 });
 window.WIDGETS = window.WIDGETS || {};
 
@@ -9,75 +9,82 @@ window.WIDGETS.cmdhistory = {
     id: "cmdhistory",
     title: "widget.cmdhistory",
     category: "terminal",
-    description: "Search shell history; click to type a command",
+    description: "Shell history — 5/15/50/100/all, filter, click to run",
     defaultSize: { w: 6, h: 6 },
     mount(body) {
+        const I = window.I18N, t = k => I.t(k);
         const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m]));
-        let alive = true;
-        let all = [];
+        const LIMITS = [5, 15, 50, 100, "all"];
+        let alive = true, all = [], limit = 5;
 
         body.innerHTML = `
-            <div style="display:flex;flex-direction:column;height:100%;gap:6px">
-                <input id="_ch_q" placeholder="Filter history…" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-elevated);color:var(--text);font-family:var(--font-ui);font-size:12px">
-                <div id="_ch_list" style="flex:1;overflow:auto;display:flex;flex-direction:column;gap:2px"></div>
+            <div class="ch">
+                <input class="ch-q" placeholder="${esc(t("ch.filter"))}" autocomplete="off" spellcheck="false">
+                <div class="ch-btns"></div>
+                <div class="ch-list"></div>
+                <div class="ch-foot"></div>
             </div>`;
-        const q = body.querySelector("#_ch_q");
-        const list = body.querySelector("#_ch_list");
+        const q = body.querySelector(".ch-q");
+        const btns = body.querySelector(".ch-btns");
+        const list = body.querySelector(".ch-list");
+        const foot = body.querySelector(".ch-foot");
 
-        function msg(text) {
-            list.innerHTML = `<div style="color:var(--text-dim);font-size:12px;padding:6px">${esc(text)}</div>`;
-        }
+        // count buttons: 5 / 15 / 50 / 100 / All
+        btns.innerHTML = LIMITS.map(n => `<button class="ch-b" data-n="${n}">${n === "all" ? esc(t("ch.all")) : n}</button>`).join("");
+        btns.querySelectorAll(".ch-b").forEach(b => b.onclick = () => {
+            limit = b.dataset.n === "all" ? "all" : Number(b.dataset.n);
+            render();
+        });
+
+        function msg(text) { list.innerHTML = `<div class="ch-msg">${esc(text)}</div>`; foot.textContent = ""; }
 
         function parseZsh(content) {
             const out = [];
-            for (let line of content.split("\n")) {
+            for (const line of content.split("\n")) {
                 if (!line) continue;
-                // zsh extended format: ": <ts>:<dur>;cmd"
-                const m = line.match(/^:\s*\d+:\d+;(.*)$/);
+                const m = line.match(/^:\s*\d+:\d+;(.*)$/); // zsh extended: ": <ts>:<dur>;cmd"
                 out.push(m ? m[1] : line);
             }
             return out;
         }
 
         function render() {
+            btns.querySelectorAll(".ch-b").forEach(b => b.classList.toggle("on", (b.dataset.n === "all" ? "all" : Number(b.dataset.n)) === limit));
             const filter = q.value.trim().toLowerCase();
-            const rows = filter ? all.filter(c => c.toLowerCase().includes(filter)) : all;
-            if (!rows.length) { msg(filter ? "No matches." : "History is empty."); return; }
+            const matched = filter ? all.filter(c => c.toLowerCase().includes(filter)) : all;
+            if (!matched.length) { msg(filter ? t("ch.nomatch") : t("ch.empty")); return; }
+            const rows = limit === "all" ? matched : matched.slice(0, limit);
             list.innerHTML = "";
-            rows.slice(0, 200).forEach(cmd => {
+            rows.forEach((cmd, i) => {
                 const row = document.createElement("div");
-                row.textContent = cmd.length > 200 ? cmd.slice(0, 200) + "…" : cmd;
-                row.title = "Click to type into terminal";
-                row.style.cssText = "font-family:var(--font-mono);font-size:11.5px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--bg-elevated)";
-                row.onclick = () => { if (window.term) window.term.runInFocused(cmd); };
+                row.className = "ch-row";
+                // number + full command that WRAPS (no truncation) so it's fully readable
+                row.innerHTML = `<span class="ch-n">${i + 1}</span><span class="ch-cmd">${esc(cmd)}</span>`;
+                row.title = "Click to type into the terminal";
+                row.onclick = () => { if (window.term && window.term.runInFocused) window.term.runInFocused(cmd); };
                 list.appendChild(row);
             });
+            foot.textContent = `${t("ch.showing")} ${rows.length} ${t("ch.of")} ${matched.length}`;
         }
 
         async function load() {
-            msg("Loading history…");
+            msg(t("ch.showing") + "…");
             let home = "";
             try { home = (await window.dyo.appInfo()).home; } catch (e) { }
-            if (!home) { msg("Could not resolve home directory."); return; }
+            if (!home) { msg("home?"); return; }
             let content = null, isZsh = false;
-            let r = await window.dyo.fs.read(home + "/.zsh_history", 1000000);
+            let r = await window.dyo.fs.read(home + "/.zsh_history", 2000000);
             if (r && r.content) { content = r.content; isZsh = true; }
-            else {
-                r = await window.dyo.fs.read(home + "/.bash_history", 1000000);
-                if (r && r.content) content = r.content;
-            }
+            else { r = await window.dyo.fs.read(home + "/.bash_history", 2000000); if (r && r.content) content = r.content; }
             if (!alive) return;
-            if (content == null) { msg("No .zsh_history or .bash_history found."); return; }
+            if (content == null) { msg("No .zsh_history / .bash_history"); return; }
             const parsed = isZsh ? parseZsh(content) : content.split("\n");
-            // newest first, dedup keeping first (newest) occurrence
-            const seen = new Set();
-            const dedup = [];
-            for (let i = parsed.length - 1; i >= 0; i--) {
+            const seen = new Set(), dedup = [];
+            for (let i = parsed.length - 1; i >= 0; i--) { // newest first, dedup
                 const c = (parsed[i] || "").trim();
                 if (!c || seen.has(c)) continue;
-                seen.add(c);
-                dedup.push(c);
-                if (dedup.length >= 200) break;
+                seen.add(c); dedup.push(c);
+                if (dedup.length >= 5000) break;
             }
             all = dedup;
             render();
