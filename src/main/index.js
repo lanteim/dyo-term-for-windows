@@ -374,8 +374,15 @@ function runMusic(action) {
             }
     }
     return new Promise(resolve => {
-        execFile("osascript", ["-e", script], {timeout: 4000}, (err, out) => {
-            resolve(err ? null : String(out).trim());
+        execFile("osascript", ["-e", script], {timeout: 4000}, (err, out, stderr) => {
+            if (err) {
+                // Surface the real reason (permission, not installed, timeout, …)
+                // so the widget can show it instead of silently failing.
+                const msg = String(stderr || err.message || "osascript failed").split("\n").find(l => l.trim()) || "osascript failed";
+                resolve("__ERR__" + msg.replace(/^\d+:\d+:\s*/, "").trim().slice(0, 180));
+                return;
+            }
+            resolve(String(out).trim());
         });
     });
 }

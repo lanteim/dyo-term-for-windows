@@ -27,6 +27,7 @@ window.WIDGETS.nowplaying = {
     defaultSize: { w: 6, h: 4 },
     mount(body) {
         const I = window.I18N;
+        const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m]));
         const fmt = s => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
         let alive = true, dragging = false;
 
@@ -78,6 +79,13 @@ window.WIDGETS.nowplaying = {
             const out = await window.dyo.music.state();
 
             if (out === null) { showEmpty("np.denied", "np.deniedhint", false); return; }
+            if (typeof out === "string" && out.startsWith("__ERR__")) {
+                // Show the real osascript error (permission/identity/timeout)
+                nowEl.style.display = "none";
+                emptyEl.style.display = "block";
+                emptyEl.innerHTML = `<b>${I.t("np.denied")}</b><br>${I.t("np.deniedhint")}<br><span style="color:var(--danger);font-size:10.5px">${esc(out.slice(7))}</span>`;
+                return;
+            }
             if (out === "notrunning" || out === "") { showEmpty("np.notrunning", "np.hint", true); return; }
 
             const p = out.split("\t");

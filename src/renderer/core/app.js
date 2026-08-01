@@ -45,7 +45,42 @@
     const editBtn = mkBtn("edit", "btn.edit", () => toggleEdit(), "edit-btn");
     mkBtn("palette", "btn.themes", () => openThemes());
     mkBtn("lang", "btn.lang", (e) => openLangMenu(e.currentTarget));
+    const dashBtn = mkBtn("grid", "btn.dash", () => toggleDash(), "dash-btn");
     mkBtn("expand", "btn.fullscreen", () => window.dyo.win("toggleFullscreen"));
+
+    // Collapse/expand the widget dashboard (terminals fill the whole width)
+    function toggleDash() {
+        const collapsed = document.body.classList.toggle("dash-collapsed");
+        dashBtn.classList.toggle("active", collapsed);
+        window.dyo.settings.set({ dashCollapsed: collapsed });
+        requestAnimationFrame(() => { const t = term.activeTab(); if (t) t._fitAll(t.root); });
+    }
+    if (settings.dashCollapsed) toggleDash();
+
+    // Draggable divider: resize the terminal area vs the dashboard
+    (function () {
+        const divider = document.getElementById("main-divider");
+        const main = document.getElementById("main");
+        const tcol = document.getElementById("terminal-col");
+        const dcol = document.getElementById("dash-col");
+        divider.addEventListener("mousedown", e => {
+            e.preventDefault();
+            const rect = main.getBoundingClientRect();
+            const onMove = ev => {
+                let ratio = (ev.clientX - rect.left) / rect.width;
+                ratio = Math.min(0.88, Math.max(0.2, ratio));
+                tcol.style.flex = ratio + " 1 0";
+                dcol.style.flex = (1 - ratio) + " 1 0";
+            };
+            const onUp = () => {
+                document.removeEventListener("mousemove", onMove);
+                document.removeEventListener("mouseup", onUp);
+                const t = term.activeTab(); if (t) t._fitAll(t.root);
+            };
+            document.addEventListener("mousemove", onMove);
+            document.addEventListener("mouseup", onUp);
+        });
+    })();
 
     // Language menu (default English)
     let langMenu = null;

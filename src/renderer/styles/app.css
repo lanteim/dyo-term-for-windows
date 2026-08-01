@@ -118,9 +118,33 @@ body::after {
     flex: 1;
     display: flex;
     min-height: 0;
-    gap: var(--gap);
+    gap: 0;
     padding: var(--gap);
 }
+
+/* Draggable divider between the terminal area and the widget dashboard */
+#main-divider {
+    flex: 0 0 10px;
+    margin: 0 2px;
+    cursor: col-resize;
+    border-radius: 6px;
+    position: relative;
+}
+#main-divider::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px;
+    height: 42px;
+    border-radius: 3px;
+    background: var(--border);
+    transition: background .15s;
+}
+#main-divider:hover::before { background: var(--accent); }
+body.dash-collapsed #main-divider,
+body.dash-collapsed #dash-col { display: none; }
 
 /* Terminal column */
 #terminal-col {
@@ -190,17 +214,35 @@ body::after {
 .pane.focused { outline-color: var(--border-strong); }
 .pane .xterm-host { position: absolute; inset: 8px; }
 .pane:not(.focused) .xterm { opacity: .72; }
-.splitter { flex: 0 0 4px; cursor: col-resize; background: transparent; }
+.splitter {
+    flex: 0 0 8px;
+    cursor: col-resize;
+    background: transparent;
+    position: relative;
+    z-index: 5;
+}
 .split.horizontal > .splitter { cursor: row-resize; }
-.splitter:hover { background: var(--border-strong); }
+.splitter::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    background: var(--border);
+    border-radius: 3px;
+    transition: background .15s;
+}
+.split.vertical > .splitter::before { width: 2px; height: 40%; }
+.split.horizontal > .splitter::before { height: 2px; width: 40%; }
+.splitter:hover::before { background: var(--accent); }
 
 /* Dashboard column */
 #dash-col {
     flex: 1 1 38%;
-    min-width: 300px;
+    min-width: 220px;
     display: flex;
     flex-direction: column;
     min-height: 0;
+    overflow: auto;
 }
 .grid-stack { min-height: 100%; }
 
