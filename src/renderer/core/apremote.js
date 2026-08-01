@@ -21,6 +21,18 @@
     }
     const prev = (ctx, key) => (ctx._r || (ctx._r = {}))[key];
     const store = (ctx, key, val) => { (ctx._r || (ctx._r = {}))[key] = val; };
+    // Surface the real ssh failure (auth/timeout/host key) instead of a blank.
+    const sshErr = r => {
+        if (!r) return "no response";
+        const line = String(r.stderr || "").split("\n").map(s => s.trim()).filter(Boolean).pop();
+        return line || ("ssh exit " + (r.code != null ? r.code : "?"));
+    };
+    const fail = async (ctx, cmd) => {
+        const r = await ctx.sh(cmd, { timeout: 9000 });
+        if (!r || r.code !== 0) return { r, err: { error: sshErr(r) } };
+        if (!String(r.stdout || "").trim()) return { r, err: { error: "empty response (is this Linux with /proc?)" } };
+        return { r, err: null };
+    };
 
     // ---------- CPU ----------
     function parseStat(txt) {
@@ -37,8 +49,8 @@
     }
     async function cpu(ctx) {
         const cmd = 'cat /proc/stat 2>/dev/null; echo "@@LOAD"; cat /proc/loadavg 2>/dev/null; echo "@@NPROC"; nproc 2>/dev/null; echo "@@PROCS"; ps -eo pcpu=,pid=,comm= 2>/dev/null | sort -rn | head -n 8';
-        const r = await ctx.sh(cmd, { timeout: 9000 });
-        if (!r || r.code !== 0 || !r.stdout.trim()) return null;
+        const { r, err } = await fail(ctx, cmd);
+        if (err) return err;
         const sec = sections(r.stdout, "STAT");
         const cur = parseStat(sec.STAT);
         const last = prev(ctx, "cpu"); store(ctx, "cpu", cur);
@@ -73,8 +85,8 @@
     }
     async function mem(ctx) {
         const cmd = 'cat /proc/meminfo 2>/dev/null; echo "@@PROCS"; ps -eo rss=,pid=,comm= 2>/dev/null | sort -rn | head -n 8';
-        const r = await ctx.sh(cmd, { timeout: 9000 });
-        if (!r || r.code !== 0 || !r.stdout.trim()) return null;
+        const { r, err } = await fail(ctx, cmd);
+        if (err) return err;
         const sec = sections(r.stdout, "MEM");
         const m = parseMeminfo(sec.MEM);
         m.procs = (sec.PROCS || "").trim().split("\n").filter(Boolean).map(l => {
@@ -97,8 +109,8 @@
     }
     async function net(ctx) {
         const cmd = 'cat /proc/net/dev 2>/dev/null; echo "@@CONNS"; cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | wc -l';
-        const r = await ctx.sh(cmd, { timeout: 9000 });
-        if (!r || r.code !== 0 || !r.stdout.trim()) return null;
+        const { r, err } = await fail(ctx, cmd);
+        if (err) return err;
         const sec = sections(r.stdout, "DEV");
         const ifaces = parseNetDev(sec.DEV);
         // primary = iface with most total bytes
@@ -144,8 +156,8 @@
     }
     async function disk(ctx) {
         const cmd = 'df -B1 -x tmpfs -x devtmpfs -x overlay -x squashfs 2>/dev/null; echo "@@INODES"; df -iP 2>/dev/null; echo "@@IO"; cat /proc/diskstats 2>/dev/null';
-        const r = await ctx.sh(cmd, { timeout: 9000 });
-        if (!r || r.code !== 0 || !r.stdout.trim()) return null;
+        const { r, err } = await fail(ctx, cmd);
+        if (err) return err;
         const sec = sections(r.stdout, "DF");
         const fs = parseDf(sec.DF);
         const inodes = parseInodes(sec.INODES);
@@ -167,8 +179,8 @@
             'echo "@@OS"', '(. /etc/os-release 2>/dev/null; echo "$PRETTY_NAME")',
             'echo "@@PROCS"', 'ps -e 2>/dev/null | tail -n +2 | wc -l', 'echo "@@USERS"', 'who 2>/dev/null | wc -l'
         ].join("; ");
-        const r = await ctx.sh(cmd, { timeout: 9000 });
-        if (!r || r.code !== 0 || !r.stdout.trim()) return null;
+        const { r, err } = await fail(ctx, cmd);
+        if (err) return err;
         const s = sections(r.stdout, "UP");
         const load = (s.LOAD || "").trim().split(/\s+/).map(N);
         return {

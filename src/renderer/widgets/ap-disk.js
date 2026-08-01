@@ -42,7 +42,7 @@ window.APWidget.define({
         // Remote → read the ssh'd server's df + /proc/diskstats.
         if (ctx.remote) {
             const d = await window.APRemote.disk(ctx);
-            if (!d) return ctx.setStatus("no disk data from " + (ctx.host && ctx.host.label), "err");
+            if (!d || d.error) return ctx.setStatus((ctx.host && ctx.host.label ? ctx.host.label + ": " : "") + ((d && d.error) || "no data"), "err");
             ctx.ref.rb.textContent = fmt.bps(d.readSec);
             ctx.ref.wb.textContent = fmt.bps(d.writeSec);
             ctx.ref.ri.textContent = "—"; ctx.ref.wi.textContent = "—";

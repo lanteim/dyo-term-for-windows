@@ -29,7 +29,7 @@ window.APWidget.define({
         // Remote (active tab is ssh'd somewhere) → read that server's /proc.
         if (ctx.remote) {
             const d = await window.APRemote.cpu(ctx);
-            if (!d) return ctx.setStatus("no CPU data from " + (ctx.host && ctx.host.label), "err");
+            if (!d || d.error) return ctx.setStatus((ctx.host && ctx.host.label ? ctx.host.label + ": " : "") + ((d && d.error) || "no data"), "err");
             const total = Math.round(d.total);
             ctx.ref.tot.textContent = total;
             ctx.ref.totbar.style.width = total + "%";

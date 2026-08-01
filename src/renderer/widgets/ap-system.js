@@ -32,7 +32,7 @@ window.APWidget.define({
         // Remote → read the ssh'd server's /proc + uname + os-release.
         if (ctx.remote) {
             const d = await window.APRemote.system(ctx);
-            if (!d) return ctx.setStatus("no system data from " + (ctx.host && ctx.host.label), "err");
+            if (!d || d.error) return ctx.setStatus((ctx.host && ctx.host.label ? ctx.host.label + ": " : "") + ((d && d.error) || "no data"), "err");
             const g = v => ctx.fmt.esc(v || "n/a");
             ctx.ref.uptime.textContent = d.uptime ? ctx.fmt.duration(d.uptime) : "n/a";
             ctx.ref.load.textContent = d.load.map(x => x.toFixed(2)).join("  ");

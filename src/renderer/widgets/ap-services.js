@@ -46,6 +46,7 @@ window.APWidget.define({
                 { timeout: 8000 });
         } catch (e) { res = null; }
         if (!res || res.code !== 0) {
+            if (ctx.remote) return ctx.setStatus((ctx.host.label || "remote") + ": " + ((res && (res.stderr || "").split("\n").map(s => s.trim()).filter(Boolean).pop()) || "systemctl failed"), "err");
             return ctx.notAvailable("systemctl not available — systemd/Linux only");
         }
 

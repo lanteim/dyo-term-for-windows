@@ -222,6 +222,7 @@
             notAvailable(msg) {
                 content.innerHTML = `<div class="apw-na">${fmt.esc(msg || "Not available on this host")}</div>`;
                 ctx.setStatus("");
+                st.degraded = true; // DOM was wiped — rebuild before the next successful update
             },
             get range() { return st.range; },
         };
@@ -262,6 +263,10 @@
             inFlight = true;
             if (frame && frame.setBusy) frame.setBusy(true);
             try {
+                // A prior notAvailable() wiped the widget's DOM — rebuild it so a
+                // recovered update (e.g. after switching to an SSH host that works)
+                // writes into live, re-bound nodes instead of detached ones.
+                if (st.degraded) { try { spec.render(ctx); ctx.bindRefs(); } catch (e) {} st.degraded = false; }
                 await spec.update(ctx);
                 st.lastUpdated = Date.now();
                 if (frame && frame.setUpdated) frame.setUpdated(st.lastUpdated);

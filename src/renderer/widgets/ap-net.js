@@ -38,7 +38,7 @@ window.APWidget.define({
         // Remote → read the ssh'd server's /proc/net.
         if (ctx.remote) {
             const d = await window.APRemote.net(ctx);
-            if (!d) return ctx.setStatus("no network data from " + (ctx.host && ctx.host.label), "err");
+            if (!d || d.error) return ctx.setStatus((ctx.host && ctx.host.label ? ctx.host.label + ": " : "") + ((d && d.error) || "no data"), "err");
             ctx.ref.iface.textContent = d.iface || "—";
             ctx.ref.state.textContent = "up"; ctx.ref.state.className = "apw-chip ok";
             ctx.ref.rx.textContent = ctx.fmt.bps(d.rxSec);

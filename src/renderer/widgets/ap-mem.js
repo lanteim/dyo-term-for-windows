@@ -34,7 +34,7 @@ window.APWidget.define({
         // Remote → read the ssh'd server's /proc/meminfo.
         if (ctx.remote) {
             const m = await window.APRemote.mem(ctx);
-            if (!m || !m.total) return ctx.setStatus("no memory data from " + (ctx.host && ctx.host.label), "err");
+            if (!m || m.error || !m.total) return ctx.setStatus((ctx.host && ctx.host.label ? ctx.host.label + ": " : "") + ((m && m.error) || "no data"), "err");
             const pct = Math.max(0, Math.min(100, (m.used / m.total) * 100));
             ctx.ref.pct.textContent = Math.round(pct);
             ctx.ref.bar.style.width = pct + "%";

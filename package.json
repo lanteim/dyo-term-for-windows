@@ -1,7 +1,7 @@
 {
   "name": "dyo-term",
   "productName": "dyo-term for windows",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "A configurable, widget-driven sci-fi terminal for Windows. 330+ widgets.",
   "keywords": [
     "terminal",
