@@ -350,11 +350,17 @@ function registerIpc() {
 // and `set st to …` fails to compile (-2741), which broke every state query.
 // Durations/positions/volume are coerced to integer so locales that use a comma
 // decimal separator (e.g. ru_RU) don't emit "137,8" and break parseFloat.
+// Tab-separated fields: state, name, artist, album, duration(int s), position(int
+// s), volume(int), shuffle(bool), repeat(off/one/all), favorited(bool).
 const MUSIC_STATE_SCRIPT = `tell application "Music"
 if it is running then
 set ps to (player state as string)
 if ps is "playing" or ps is "paused" then
-return ps & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & ((duration of current track) as integer) & tab & ((player position) as integer) & tab & ((sound volume) as integer)
+set fav to false
+try
+set fav to (favorited of current track)
+end try
+return ps & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & ((duration of current track) as integer) & tab & ((player position) as integer) & tab & ((sound volume) as integer) & tab & ((shuffle enabled) as string) & tab & (song repeat as string) & tab & (fav as string)
 else
 return ps & tab & tab & tab & tab & tab & tab & ((sound volume) as integer)
 end if
@@ -371,8 +377,20 @@ function runMusic(action) {
         case "next": script = 'tell application "Music" to next track'; break;
         case "previous": script = 'tell application "Music" to previous track'; break;
         default:
-            if (typeof action === "object" && action && action.volume != null) {
-                script = `tell application "Music" to set sound volume to ${Math.round(action.volume)}`;
+            if (typeof action === "object" && action) {
+                if (action.volume != null) {
+                    script = `tell application "Music" to set sound volume to ${Math.round(action.volume)}`;
+                } else if (action.seek != null) {
+                    script = `tell application "Music" to set player position to ${Math.max(0, Math.round(action.seek))}`;
+                } else if (action.shuffle != null) {
+                    script = `tell application "Music" to set shuffle enabled to ${action.shuffle ? "true" : "false"}`;
+                } else if (action.repeat != null && ["off", "one", "all"].includes(action.repeat)) {
+                    script = `tell application "Music" to set song repeat to ${action.repeat}`;
+                } else if (action.favorite != null) {
+                    script = `tell application "Music" to set favorited of current track to ${action.favorite ? "true" : "false"}`;
+                } else {
+                    return Promise.resolve(null);
+                }
             } else {
                 return Promise.resolve(null);
             }

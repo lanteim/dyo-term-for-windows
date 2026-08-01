@@ -460,6 +460,23 @@ textarea.notes::placeholder { color: var(--text-dim); }
     color: var(--accent); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-family: var(--font-ui);
 }
 .np-times { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-dim); margin-top: 4px; font-variant-numeric: tabular-nums; }
+/* Seekable progress bar */
+.np-seek { position: relative; margin-top: 12px; padding: 6px 0; cursor: pointer; touch-action: none; }
+.np-seek .bar { height: 6px; transition: height .12s; }
+.np-seek:hover .bar { height: 8px; }
+.np-seek .bar > i { transition: width .12s linear; }
+.np-seek.seeking .bar > i { transition: none; }
+.np-seek-head {
+    position: absolute; top: 50%; left: 0; width: 12px; height: 12px; border-radius: 50%;
+    background: var(--accent); transform: translate(-50%, -50%);
+    box-shadow: 0 0 8px var(--accent); opacity: 0; transition: opacity .12s; pointer-events: none;
+}
+.np-seek:hover .np-seek-head, .np-seek.seeking .np-seek-head { opacity: 1; }
+/* Toggle buttons: shuffle / repeat / favorite */
+.np-controls button.tgl { min-width: 34px; padding: 7px 9px; }
+.np-controls button.on { color: var(--accent); border-color: var(--accent); }
+.np-controls button.fav.on { color: var(--danger); border-color: var(--danger); }
+.np-controls button.fav.on svg { fill: var(--danger); }
 
 /* scrollbars */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
