@@ -46,7 +46,68 @@
     mkBtn("palette", "btn.themes", () => openThemes());
     mkBtn("lang", "btn.lang", (e) => openLangMenu(e.currentTarget));
     const dashBtn = mkBtn("grid", "btn.dash", () => toggleDash(), "dash-btn");
+    const dockBtn = mkBtn("dock", "btn.dock", () => cycleDock(), "dock-btn");
+    mkBtn("layers", "btn.layouts", (e) => openLayoutMenu(e.currentTarget), "layouts-btn");
     mkBtn("expand", "btn.fullscreen", () => window.dyo.win("toggleFullscreen"));
+
+    // Dock the dashboard to any edge: right → bottom → left → top.
+    const DOCKS = ["right", "bottom", "left", "top"];
+    let dashDock = DOCKS.includes(settings.dashDock) ? settings.dashDock : "right";
+    function applyDock(pos, save) {
+        dashDock = DOCKS.includes(pos) ? pos : "right";
+        document.body.classList.remove("dock-right", "dock-bottom", "dock-left", "dock-top");
+        document.body.classList.add("dock-" + dashDock);
+        // a prior divider drag left an inline flex sized for the old axis — reset it
+        document.getElementById("terminal-col").style.flex = "";
+        document.getElementById("dash-col").style.flex = "";
+        if (save) window.dyo.settings.set({ dashDock });
+        requestAnimationFrame(() => { const t = term.activeTab(); if (t) t._fitAll(t.root); });
+    }
+    function cycleDock() { applyDock(DOCKS[(DOCKS.indexOf(dashDock) + 1) % DOCKS.length], true); }
+    applyDock(dashDock, false);
+    window.__setDock = (pos) => applyDock(pos, true); // used when switching layouts
+    window.__dashDock = () => dashDock;
+
+    // ---- layout profiles menu ----
+    let layoutMenu = null;
+    function openLayoutMenu(anchor) {
+        if (layoutMenu) { layoutMenu.remove(); layoutMenu = null; return; }
+        const dash = window.dash;
+        layoutMenu = document.createElement("div");
+        layoutMenu.className = "popmenu";
+        const render = () => {
+            const names = dash.listLayouts();
+            layoutMenu.innerHTML = `<div class="popmenu-h" data-i18n="btn.layouts">${window.I18N.t("btn.layouts")}</div>`;
+            names.forEach(name => {
+                const row = document.createElement("div");
+                row.className = "popmenu-row" + (name === dash.activeLayout ? " active" : "");
+                row.innerHTML = `<span class="nm">${escapeHtml(name)}</span>` + (names.length > 1 ? `<span class="del" title="Delete">${window.ICONS.close}</span>` : "");
+                row.querySelector(".nm").onclick = () => { dash.switchLayout(name); render(); };
+                const del = row.querySelector(".del");
+                if (del) del.onclick = (ev) => { ev.stopPropagation(); dash.deleteLayout(name); render(); };
+                layoutMenu.appendChild(row);
+            });
+            const add = document.createElement("div");
+            add.className = "popmenu-add";
+            add.innerHTML = `<input placeholder="New layout name…" spellcheck="false"><button>${window.ICONS.plus}</button>`;
+            const inp = add.querySelector("input"), btn = add.querySelector("button");
+            const create = () => { const n = dash.newLayout(inp.value); inp.value = ""; render(); };
+            btn.onclick = create;
+            inp.addEventListener("keydown", ev => { if (ev.key === "Enter") create(); ev.stopPropagation(); });
+            layoutMenu.appendChild(add);
+        };
+        render();
+        document.getElementById("app").appendChild(layoutMenu);
+        const place = () => { const r = anchor.getBoundingClientRect(); layoutMenu.style.top = (r.bottom + 6) + "px"; layoutMenu.style.right = (window.innerWidth - r.right) + "px"; };
+        place();
+        setTimeout(() => document.addEventListener("mousedown", closeLayoutOnce), 0);
+    }
+    function closeLayoutOnce(e) {
+        if (layoutMenu && !layoutMenu.contains(e.target) && !e.target.closest("#layouts-btn")) {
+            layoutMenu.remove(); layoutMenu = null;
+            document.removeEventListener("mousedown", closeLayoutOnce);
+        }
+    }
 
     // Collapse/expand the widget dashboard (terminals fill the whole width)
     function toggleDash() {
@@ -66,8 +127,11 @@
         divider.addEventListener("mousedown", e => {
             e.preventDefault();
             const rect = main.getBoundingClientRect();
+            const vertical = dashDock === "top" || dashDock === "bottom";
             const onMove = ev => {
-                let ratio = (ev.clientX - rect.left) / rect.width;
+                // fraction of the main axis given to the terminal
+                let ratio = vertical ? (ev.clientY - rect.top) / rect.height : (ev.clientX - rect.left) / rect.width;
+                if (dashDock === "left" || dashDock === "top") ratio = 1 - ratio; // dash sits before the terminal
                 ratio = Math.min(0.88, Math.max(0.2, ratio));
                 tcol.style.flex = ratio + " 1 0";
                 dcol.style.flex = (1 - ratio) + " 1 0";

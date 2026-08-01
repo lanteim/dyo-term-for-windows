@@ -57,12 +57,74 @@ class Dashboard {
 
         this.grid.on("change", () => this.persist());
 
-        const saved = settings.layout;
-        if (saved && Array.isArray(saved.items) && saved.items.length) {
-            saved.items.forEach(it => this.addWidget(it.widgetId, it, false));
-        } else {
-            this._defaultLayout();
+        // Keep the "last updated" chrome labels fresh (relative time).
+        setInterval(() => {
+            if (!window.APWidget) return;
+            this.gridEl.querySelectorAll(".w-updated[data-ts]").forEach(el => {
+                const ts = Number(el.dataset.ts);
+                if (ts) el.textContent = window.APWidget.fmt.ago(ts);
+            });
+        }, 5000);
+
+        // Layout profiles: named layouts you can switch between. Migrate any
+        // pre-existing single layout into a "Default" profile.
+        this.layouts = (settings.layouts && typeof settings.layouts === "object") ? settings.layouts : {};
+        if (!Object.keys(this.layouts).length) {
+            this.layouts = { "Default": { items: (settings.layout && settings.layout.items) || [], dock: settings.dashDock || "right" } };
         }
+        this.activeLayout = (settings.activeLayout && this.layouts[settings.activeLayout]) ? settings.activeLayout : Object.keys(this.layouts)[0];
+        this._loadLayout(this.activeLayout, false);
+    }
+
+    listLayouts() { return Object.keys(this.layouts); }
+
+    clearAll() {
+        [...this.mounted.keys()].forEach(item => {
+            const rec = this.mounted.get(item);
+            if (rec && rec.instance && rec.instance.destroy) rec.instance.destroy();
+            this.mounted.delete(item);
+        });
+        this.grid.removeAll();
+    }
+
+    _loadLayout(name, save) {
+        if (!this.layouts[name]) return;
+        this.clearAll();
+        this.activeLayout = name;
+        const L = this.layouts[name];
+        this._loading = true;
+        if (L.items && L.items.length) L.items.forEach(it => this.addWidget(it.widgetId, it, false));
+        else if (name === "Default") this._defaultLayout();
+        this._loading = false;
+        if (L.dock && window.__setDock) window.__setDock(L.dock);
+        if (save) { this.settings.activeLayout = name; window.dyo.settings.set({ activeLayout: name }); }
+    }
+
+    switchLayout(name) { if (this.layouts[name]) this._loadLayout(name, true); }
+
+    newLayout(name) {
+        name = (name || "").trim() || ("Layout " + (this.listLayouts().length + 1));
+        if (this.layouts[name]) name += " " + Math.random().toString(36).slice(2, 5);
+        this.layouts[name] = { items: [], dock: window.__dashDock ? window.__dashDock() : "right" };
+        this._loadLayout(name, true);
+        this.persist();
+        return name;
+    }
+
+    deleteLayout(name) {
+        if (!this.layouts[name] || this.listLayouts().length <= 1) return;
+        delete this.layouts[name];
+        if (this.activeLayout === name) this._loadLayout(this.listLayouts()[0], true);
+        this.persist();
+    }
+
+    renameLayout(oldName, newName) {
+        newName = (newName || "").trim();
+        if (!this.layouts[oldName] || !newName || this.layouts[newName]) return;
+        this.layouts[newName] = this.layouts[oldName];
+        delete this.layouts[oldName];
+        if (this.activeLayout === oldName) this.activeLayout = newName;
+        this.persist();
     }
 
     // Minimal by default — everything else is opt-in via the catalog
@@ -170,7 +232,17 @@ class Dashboard {
 
         const content = document.createElement("div");
         content.className = "widget";
-        content.innerHTML = `<header><span class="title" data-i18n="${def.title}">${window.I18N.t(def.title)}</span><span class="sub"></span><span class="remove">${window.ICONS.close}</span></header><div class="body"></div>`;
+        content.innerHTML = `<header>
+            <span class="title" data-i18n="${def.title}">${window.I18N.t(def.title)}</span>
+            <span class="sub"></span>
+            <span class="w-updated" title="Last updated"></span>
+            <span class="w-tools">
+                <button class="w-btn w-refresh" title="Refresh" style="display:none">${window.ICONS.reload}</button>
+                <button class="w-btn w-settings" title="Settings" style="display:none">${window.ICONS.settings}</button>
+                <button class="w-btn w-collapse" title="Collapse / expand">${window.ICONS.chevron}</button>
+                <button class="w-btn remove" title="Close">${window.ICONS.close}</button>
+            </span>
+        </header><div class="body"></div>`;
 
         const item = this.grid.addWidget(Object.assign({}, opts, { content: "" }));
         const contentHost = item.querySelector(".grid-stack-item-content");
@@ -182,7 +254,27 @@ class Dashboard {
             this.removeItem(item);
         };
 
-        const instance = def.mount(content.querySelector(".body"));
+        // Collapse / expand — shrink the grid cell down to just the header.
+        content.querySelector(".w-collapse").onclick = (e) => {
+            e.stopPropagation();
+            const collapsed = item.classList.toggle("apw-collapsed");
+            if (collapsed) { item.dataset.prevh = item.gridstackNode.h; this.grid.update(item, { h: 1 }); }
+            else { this.grid.update(item, { h: Number(item.dataset.prevh) || 3 }); }
+        };
+
+        // Frame API — A.Petrov-style widgets use this to light up refresh/settings
+        // buttons and report their last-updated time in the standard chrome.
+        const refreshBtn = content.querySelector(".w-refresh");
+        const settingsBtn = content.querySelector(".w-settings");
+        const updatedEl = content.querySelector(".w-updated");
+        const frame = {
+            onRefresh: (fn) => { refreshBtn.style.display = ""; refreshBtn.onclick = (e) => { e.stopPropagation(); fn(); }; },
+            onSettings: (fn) => { settingsBtn.style.display = ""; settingsBtn.onclick = (e) => { e.stopPropagation(); fn(); }; },
+            setBusy: (b) => refreshBtn.classList.toggle("spin", !!b),
+            setUpdated: (ts) => { updatedEl.dataset.ts = ts || 0; updatedEl.textContent = window.APWidget ? window.APWidget.fmt.ago(ts) : ""; },
+        };
+
+        const instance = def.mount(content.querySelector(".body"), frame);
         this.mounted.set(item, { widgetId, instance });
         if (persist) this.persist();
     }
@@ -201,12 +293,17 @@ class Dashboard {
     }
 
     persist() {
+        if (this._loading) return;
         const items = [];
         this.grid.engine.nodes.forEach(n => {
             items.push({ widgetId: n.dyoWidget, x: n.x, y: n.y, w: n.w, h: n.h });
         });
-        this.settings.layout = { items };
-        window.dyo.settings.set({ layout: this.settings.layout });
+        if (!this.layouts[this.activeLayout]) this.layouts[this.activeLayout] = {};
+        this.layouts[this.activeLayout].items = items;
+        this.layouts[this.activeLayout].dock = window.__dashDock ? window.__dashDock() : (this.layouts[this.activeLayout].dock || "right");
+        this.settings.layouts = this.layouts;
+        this.settings.layout = { items }; // legacy mirror for older reads
+        window.dyo.settings.set({ layouts: this.layouts, activeLayout: this.activeLayout, layout: this.settings.layout });
     }
 }
 
