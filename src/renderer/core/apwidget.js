@@ -332,7 +332,10 @@
 
         // when the active tab's ssh host changes, drop history (different server)
         // and re-read immediately so metrics track the tab.
-        const onHostChange = () => { st.hist = {}; renderHost(); runUpdate(true); };
+        // Switching host: clear history AND rebuild the DOM to placeholders so the
+        // previous host's values don't linger under the new host's badge while the
+        // first remote read is in flight (or if it errors).
+        const onHostChange = () => { st.hist = {}; st.degraded = true; renderHost(); runUpdate(true); };
         window.addEventListener("dyo-host-change", onHostChange);
 
         runUpdate(true);

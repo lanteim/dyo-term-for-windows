@@ -237,7 +237,13 @@ function registerIpc() {
     // relies on the user's keys/agent/ssh config. argv array → no shell inject.
     ipcMain.handle("ssh:exec", async (e, sshArgs, command, opts = {}) => {
         const env = loginEnvPromise ? await loginEnvPromise : process.env;
-        const base = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-o", "StrictHostKeyChecking=accept-new"];
+        // BatchMode so we never block on a prompt; ConnectTimeout so we never hang.
+        // Do NOT force StrictHostKeyChecking — a command-line -o overrides the user's
+        // ~/.ssh/config, so forcing it broke hosts the user reaches fine interactively
+        // (e.g. a rebuilt server with a changed host key that their config accepts).
+        // The widget only ever targets a host the user already connected to, so the
+        // key decision has already been made in their config/known_hosts.
+        const base = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=8"];
         const args = [...base, ...(Array.isArray(sshArgs) ? sshArgs : []), String(command || "")];
         return new Promise(resolve => {
             execFile("ssh", args, { env, timeout: opts.timeout || 10000, maxBuffer: 8 * 1024 * 1024 }, (err, stdout, stderr) => {
