@@ -1,0 +1,25 @@
+/* Bundled OFL fonts (SIL Open Font License 1.1) — see assets/fonts. */
+@font-face {
+    font-family: "JetBrains Mono";
+    font-weight: 400;
+    font-display: block;
+    src: url("../assets/fonts/jetbrains-mono-400.woff2") format("woff2");
+}
+@font-face {
+    font-family: "JetBrains Mono";
+    font-weight: 500;
+    font-display: block;
+    src: url("../assets/fonts/jetbrains-mono-500.woff2") format("woff2");
+}
+@font-face {
+    font-family: "JetBrains Mono";
+    font-weight: 700;
+    font-display: block;
+    src: url("../assets/fonts/jetbrains-mono-700.woff2") format("woff2");
+}
+@font-face {
+    font-family: "Fira Code";
+    font-weight: 400;
+    font-display: block;
+    src: url("../assets/fonts/fira-code-400.woff2") format("woff2");
+}

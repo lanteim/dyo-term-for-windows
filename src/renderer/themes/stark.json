@@ -1,0 +1,40 @@
+{
+  "name": "Stark",
+  "description": "Arc-reactor gold on deep hangar blue",
+  "colors": {
+    "bg": "#05070a",
+    "bgPanel": "rgba(20, 30, 44, 0.55)",
+    "bgElevated": "rgba(28, 40, 58, 0.75)",
+    "border": "rgba(120, 190, 255, 0.18)",
+    "borderStrong": "rgba(120, 190, 255, 0.35)",
+    "accent": "#ffb547",
+    "accent2": "#4fd2ff",
+    "danger": "#ff5b5b",
+    "text": "#e8f2ff",
+    "textDim": "#8fa6c4",
+    "grid": "rgba(90, 150, 220, 0.06)"
+  },
+  "terminal": {
+    "background": "#060a10",
+    "foreground": "#e8f2ff",
+    "cursor": "#ffb547",
+    "cursorAccent": "#060a10",
+    "selectionBackground": "rgba(79, 210, 255, 0.30)",
+    "black": "#0b1017",
+    "red": "#ff6b6b",
+    "green": "#4fd2a0",
+    "yellow": "#ffb547",
+    "blue": "#4fa6ff",
+    "magenta": "#c792ea",
+    "cyan": "#4fd2ff",
+    "white": "#cdd9e8",
+    "brightBlack": "#4a5a70",
+    "brightRed": "#ff8a8a",
+    "brightGreen": "#7fe6c0",
+    "brightYellow": "#ffd08a",
+    "brightBlue": "#8ac2ff",
+    "brightMagenta": "#e0b0ff",
+    "brightCyan": "#9be6ff",
+    "brightWhite": "#ffffff"
+  }
+}

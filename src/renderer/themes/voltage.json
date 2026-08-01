@@ -1,0 +1,40 @@
+{
+  "name": "Voltage",
+  "description": "Acid green on carbon",
+  "colors": {
+    "bg": "#040806",
+    "bgPanel": "rgba(16, 32, 22, 0.55)",
+    "bgElevated": "rgba(22, 44, 30, 0.78)",
+    "border": "rgba(110, 255, 170, 0.16)",
+    "borderStrong": "rgba(110, 255, 170, 0.36)",
+    "accent": "#7dff9e",
+    "accent2": "#e8ff5a",
+    "danger": "#ff6b6b",
+    "text": "#e6ffee",
+    "textDim": "#82ad93",
+    "grid": "rgba(90, 220, 140, 0.06)"
+  },
+  "terminal": {
+    "background": "#050b07",
+    "foreground": "#e6ffee",
+    "cursor": "#7dff9e",
+    "cursorAccent": "#050b07",
+    "selectionBackground": "rgba(232, 255, 90, 0.25)",
+    "black": "#0a140d",
+    "red": "#ff6b6b",
+    "green": "#7dff9e",
+    "yellow": "#e8ff5a",
+    "blue": "#5ad2ff",
+    "magenta": "#c792ea",
+    "cyan": "#5affe0",
+    "white": "#cfe8d6",
+    "brightBlack": "#4a6a55",
+    "brightRed": "#ff8a8a",
+    "brightGreen": "#a6ffbd",
+    "brightYellow": "#f4ff9a",
+    "brightBlue": "#9be6ff",
+    "brightMagenta": "#e0b0ff",
+    "brightCyan": "#9bffe8",
+    "brightWhite": "#ffffff"
+  }
+}

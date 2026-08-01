@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.cache/
+.smoke/
+.DS_Store
+*.log
+userdata/
+.npmrc

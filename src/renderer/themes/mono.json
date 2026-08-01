@@ -1,0 +1,40 @@
+{
+  "name": "Graphite",
+  "description": "Minimal monochrome",
+  "colors": {
+    "bg": "#0a0b0d",
+    "bgPanel": "rgba(30, 33, 38, 0.55)",
+    "bgElevated": "rgba(40, 44, 50, 0.8)",
+    "border": "rgba(200, 210, 225, 0.14)",
+    "borderStrong": "rgba(200, 210, 225, 0.32)",
+    "accent": "#e6ecf2",
+    "accent2": "#9aa7b6",
+    "danger": "#ff6b6b",
+    "text": "#eef2f7",
+    "textDim": "#8b97a6",
+    "grid": "rgba(180, 195, 215, 0.05)"
+  },
+  "terminal": {
+    "background": "#0c0e11",
+    "foreground": "#eef2f7",
+    "cursor": "#e6ecf2",
+    "cursorAccent": "#0c0e11",
+    "selectionBackground": "rgba(200, 210, 225, 0.22)",
+    "black": "#14171b",
+    "red": "#ff8080",
+    "green": "#a9d6b0",
+    "yellow": "#e6d3a3",
+    "blue": "#a9c2e6",
+    "magenta": "#c9b3e6",
+    "cyan": "#a3dede",
+    "white": "#d5dbe2",
+    "brightBlack": "#5a6472",
+    "brightRed": "#ffa0a0",
+    "brightGreen": "#c3e6c8",
+    "brightYellow": "#f0e2b8",
+    "brightBlue": "#c3d6f0",
+    "brightMagenta": "#ddccf0",
+    "brightCyan": "#c0eeee",
+    "brightWhite": "#ffffff"
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "name": "dyo-term",
+  "productName": "dyo-term for windows",
+  "version": "0.1.0",
+  "description": "A configurable, widget-driven sci-fi terminal for Windows. 330+ widgets.",
+  "keywords": [
+    "terminal",
+    "tty",
+    "dashboard",
+    "apple-silicon",
+    "arm64"
+  ],
+  "author": "lantis",
+  "license": "MIT",
+  "main": "src/main/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "electron-rebuild -f -w node-pty",
+    "build": "electron-builder build --win --x64",
+    "build:mac": "electron-builder build --mac --arm64",
+    "build:win": "electron-builder build --win --x64",
+    "debug:widgets": "node test/debug-all.mjs",
+    "test": "node test/smoke.mjs",
+    "clean": "rm -rf dist"
+  },
+  "build": {
+    "appId": "com.dyoterm.win",
+    "productName": "dyo-term for windows",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "npmRebuild": true,
+    "artifactName": "dyo-term-${os}-${arch}.${ext}",
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.developer-tools",
+      "darkModeSupport": true,
+      "minimumSystemVersion": "12.0.0",
+      "identity": "-"
+    },
+    "dmg": {
+      "artifactName": "dyo-term-macOS-${arch}.dmg"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "dyo-term-Windows-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    }
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-search": "^0.16.0",
+    "@xterm/addon-web-links": "^0.12.0",
+    "@xterm/addon-webgl": "^0.19.0",
+    "@xterm/xterm": "^6.0.0",
+    "gridstack": "^11.3.0",
+    "ioredis": "^5.4.2",
+    "mongodb": "^6.12.0",
+    "mssql": "^11.0.1",
+    "mysql2": "^3.11.5",
+    "node-pty": "^1.1.0",
+    "pg": "^8.13.1",
+    "systeminformation": "^5.33.1"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.2.0",
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3",
+    "ws": "^8.18.0"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "Nebula",
+  "description": "Violet and cyan on near-black",
+  "colors": {
+    "bg": "#08060f",
+    "bgPanel": "rgba(30, 22, 48, 0.55)",
+    "bgElevated": "rgba(42, 30, 66, 0.78)",
+    "border": "rgba(180, 130, 255, 0.18)",
+    "borderStrong": "rgba(180, 130, 255, 0.38)",
+    "accent": "#b388ff",
+    "accent2": "#5ef2d0",
+    "danger": "#ff6ad5",
+    "text": "#f0e9ff",
+    "textDim": "#a394c6",
+    "grid": "rgba(150, 110, 220, 0.07)"
+  },
+  "terminal": {
+    "background": "#0a0714",
+    "foreground": "#f0e9ff",
+    "cursor": "#b388ff",
+    "cursorAccent": "#0a0714",
+    "selectionBackground": "rgba(94, 242, 208, 0.28)",
+    "black": "#140f24",
+    "red": "#ff6ad5",
+    "green": "#5ef2d0",
+    "yellow": "#ffd76a",
+    "blue": "#8a9bff",
+    "magenta": "#b388ff",
+    "cyan": "#6ae0ff",
+    "white": "#d8cff0",
+    "brightBlack": "#5b4d78",
+    "brightRed": "#ff9ae0",
+    "brightGreen": "#93ffe6",
+    "brightYellow": "#ffe89a",
+    "brightBlue": "#b0bcff",
+    "brightMagenta": "#d4b8ff",
+    "brightCyan": "#a6ecff",
+    "brightWhite": "#ffffff"
+  }
+}

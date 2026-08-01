@@ -1,0 +1,64 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            name: macos-arm64
+            script: build:mac
+          - os: windows-latest
+            name: windows
+            script: build:win
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # npm ci runs the unchanged postinstall (electron-rebuild -f -w node-pty),
+      # which builds the node-pty native module for THIS runner's OS/arch.
+      # This is why the Windows leg MUST run on a windows-latest runner:
+      # the native .node cannot be cross-built from macOS.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (${{ matrix.script }})
+        run: npm run ${{ matrix.script }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # keep native rebuilds from being skipped by electron-builder cache
+          USE_HARD_LINKS: false
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dyo-term-${{ matrix.name }}
+          if-no-files-found: ignore
+          retention-days: 14
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/*.exe
+            dist/*.blockmap
+            dist/latest*.yml
