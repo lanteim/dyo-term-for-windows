@@ -346,13 +346,17 @@ function registerIpc() {
     require("./db.js").register(ipcMain);
 }
 
+// NOTE: the variable is `ps`, not `st` — `st` is a reserved token in AppleScript
+// and `set st to …` fails to compile (-2741), which broke every state query.
+// Durations/positions/volume are coerced to integer so locales that use a comma
+// decimal separator (e.g. ru_RU) don't emit "137,8" and break parseFloat.
 const MUSIC_STATE_SCRIPT = `tell application "Music"
 if it is running then
-set st to (player state as string)
-if st is "playing" or st is "paused" then
-return st & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & ((duration of current track) as string) & tab & ((player position) as string) & tab & ((sound volume) as string)
+set ps to (player state as string)
+if ps is "playing" or ps is "paused" then
+return ps & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & ((duration of current track) as integer) & tab & ((player position) as integer) & tab & ((sound volume) as integer)
 else
-return st & tab & tab & tab & tab & tab & tab & ((sound volume) as string)
+return ps & tab & tab & tab & tab & tab & tab & ((sound volume) as integer)
 end if
 else
 return "notrunning"

@@ -145,6 +145,11 @@ body::after {
 #main-divider:hover::before { background: var(--accent); }
 body.dash-collapsed #main-divider,
 body.dash-collapsed #dash-col { display: none; }
+/* Collapsed → the terminal fills the whole row. A prior divider drag leaves an
+   inline flex-grow < 1 on #terminal-col, and per the flexbox spec a sole item
+   with grow < 1 only claims that fraction of the free space (so it would stay
+   e.g. 30% wide). !important overrides the inline drag style; grow 1 fills. */
+body.dash-collapsed #terminal-col { flex: 1 1 100% !important; }
 
 /* Terminal column */
 #terminal-col {

@@ -29,6 +29,7 @@ window.WIDGETS.nowplaying = {
         const I = window.I18N;
         const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m]));
         const fmt = s => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+        const num = s => parseFloat(String(s == null ? "" : s).replace(",", ".")); // tolerate comma decimals
         let alive = true, dragging = false;
 
         body.innerHTML = `
@@ -98,11 +99,11 @@ window.WIDGETS.nowplaying = {
             $("#_np_a").textContent = [p[2], p[3]].filter(Boolean).join(" — ");
             $("#_np_state").textContent = state.toUpperCase();
             $("#_np_pp").innerHTML = state === "playing" ? window.ICONS.pause : window.ICONS.play;
-            const dur = parseFloat(p[4]) || 0, pos = parseFloat(p[5]) || 0;
+            const dur = num(p[4]) || 0, pos = num(p[5]) || 0;
             $("#_np_bar").style.width = (dur > 0 ? Math.min(100, (pos / dur) * 100) : 0) + "%";
             $("#_np_pos").textContent = fmt(pos);
             $("#_np_dur").textContent = fmt(dur);
-            const v = parseFloat(p[6]);
+            const v = num(p[6]);
             if (!dragging && !isNaN(v)) vol.value = v;
         };
         tick();
