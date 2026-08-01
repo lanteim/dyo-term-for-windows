@@ -56,7 +56,6 @@ See `WINDOWS.md` for details.
 | Find | `Ctrl+F` |
 | Edit widgets | `Ctrl+E` |
 | Theme gallery | `Ctrl+K` |
-| Copy / paste (terminal) | `Ctrl+Shift+C` / `Ctrl+Shift+V` |
 
 ## License
 

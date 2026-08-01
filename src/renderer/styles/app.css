@@ -316,6 +316,47 @@ body.editing #editbar { display: flex; }
 #editbar .chip:hover { border-color: var(--accent); color: var(--accent); }
 #editbar .hint { color: var(--text-dim); font-size: 11px; margin-left: auto; }
 
+/* Catalog controls: search sort button + category filter chips */
+#catalog-overlay .chip {
+    padding: 5px 11px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1.4;
+    white-space: nowrap;
+    transition: border-color .12s, color .12s, background .12s;
+}
+#catalog-overlay .chip:hover { border-color: var(--accent); color: var(--accent); }
+#catalog-overlay .chip.active {
+    border-color: var(--accent);
+    color: var(--bg);
+    background: var(--accent);
+}
+#catalog-overlay .chip.active b { color: var(--bg); opacity: .8 !important; }
+#catalog-overlay #catalog-search {
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    outline: none;
+}
+#catalog-overlay #catalog-search:focus { border-color: var(--accent); }
+#catalog-overlay .cat-item {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: border-color .12s, background .12s;
+}
+#catalog-overlay .cat-item:hover { border-color: var(--accent); background: var(--bg-panel); }
+#catalog-overlay .az-jump:hover { background: var(--bg-panel); }
+
 /* Metric visuals shared by widgets */
 .metric-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
 .metric-row .k { color: var(--text-dim); font-size: 11px; letter-spacing: .5px; }

@@ -18,10 +18,32 @@ class Dashboard {
         this.catalog = document.createElement("div");
         this.catalog.className = "overlay";
         this.catalog.id = "catalog-overlay";
-        this.catalog.innerHTML = `<div class="dialog"><h2 data-i18n="catalog.title">Widget Catalog</h2><div id="catalog-body"></div></div>`;
+        this.catalog.innerHTML = `<div class="dialog" style="width:min(760px,95vw)">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+                <h2 data-i18n="catalog.title" style="margin:0">Widget Catalog</h2>
+                <span id="catalog-count" style="color:var(--text-dim);font-size:12px"></span>
+                <span style="flex:1"></span>
+                <input id="catalog-search" data-i18n-ph="catalog.search" placeholder="Search widgets…" autocomplete="off" spellcheck="false" style="width:200px">
+                <button id="catalog-sort" class="chip" title="Toggle A–Z / by category">A–Z</button>
+            </div>
+            <div id="catalog-cats" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+            <div id="catalog-body" style="max-height:60vh;overflow:auto"></div>
+        </div>`;
         document.body.appendChild(this.catalog);
         this.catalog.addEventListener("click", e => { if (e.target.id === "catalog-overlay") this.catalog.classList.remove("open"); });
         host.querySelector("#open-catalog").onclick = () => this.openCatalog();
+
+        // Catalog view state
+        this._cat = { q: "", category: "all", alpha: false };
+        const search = this.catalog.querySelector("#catalog-search");
+        search.addEventListener("input", () => { this._cat.q = search.value.trim().toLowerCase(); this._renderCatalog(); });
+        search.addEventListener("keydown", e => { if (e.key === "Escape") this.catalog.classList.remove("open"); });
+        this.catalog.querySelector("#catalog-sort").onclick = (e) => {
+            this._cat.alpha = !this._cat.alpha;
+            e.currentTarget.classList.toggle("active", this._cat.alpha);
+            e.currentTarget.textContent = this._cat.alpha ? "A–Z ✓" : "A–Z";
+            this._renderCatalog();
+        };
 
         this.grid = window.GridStack.init({
             column: 12,
@@ -52,32 +74,87 @@ class Dashboard {
     }
 
     openCatalog() {
+        this.catalog.classList.add("open");
+        this._renderCatalog();
+        const search = this.catalog.querySelector("#catalog-search");
+        setTimeout(() => search && search.focus(), 30);
+    }
+
+    _catLabel(cat) {
+        const l = window.I18N.t("cat." + cat);
+        return (l === "cat." + cat) ? cat : l; // fall back to raw category if no translation
+    }
+
+    _renderCatalog() {
+        const t = window.I18N.t.bind(window.I18N);
+        const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m]));
+        const all = Object.values(window.WIDGETS);
+        const cats = [...new Set(all.map(w => w.category || "other"))].sort();
+
+        // ---- category filter chips (with counts) ----
+        const catsEl = this.catalog.querySelector("#catalog-cats");
+        const chip = (id, label, count, active) =>
+            `<span class="chip cat-chip${active ? " active" : ""}" data-cat="${id}">${esc(label)}${count != null ? ` <b style="opacity:.6">${count}</b>` : ""}</span>`;
+        let chipsHtml = chip("all", t("catalog.all"), all.length, this._cat.category === "all");
+        cats.forEach(c => chipsHtml += chip(c, this._catLabel(c), all.filter(w => (w.category || "other") === c).length, this._cat.category === c));
+        catsEl.innerHTML = chipsHtml;
+        catsEl.querySelectorAll(".cat-chip").forEach(el => el.onclick = () => { this._cat.category = el.dataset.cat; this._renderCatalog(); });
+
+        // ---- filter ----
+        const q = this._cat.q;
+        let items = all.filter(w => {
+            if (this._cat.category !== "all" && (w.category || "other") !== this._cat.category) return false;
+            if (!q) return true;
+            const name = t(w.title).toLowerCase();
+            return name.includes(q) || (w.id || "").toLowerCase().includes(q) || (w.description || "").toLowerCase().includes(q) || (w.category || "").toLowerCase().includes(q);
+        });
+
         const bodyEl = this.catalog.querySelector("#catalog-body");
-        // Group widget definitions by category
-        const groups = {};
-        Object.values(window.WIDGETS).forEach(w => {
-            const cat = w.category || "other";
-            (groups[cat] = groups[cat] || []).push(w);
-        });
+        this.catalog.querySelector("#catalog-count").textContent = `${items.length} / ${all.length}`;
+
+        const card = w =>
+            `<div class="cat-item" data-id="${w.id}" title="${esc(w.id)}">
+                <div style="color:var(--accent);font-size:13px">${esc(t(w.title))}</div>
+                <div style="color:var(--text-dim);font-size:10.5px;margin-top:3px">${esc(w.description || "")}</div>
+            </div>`;
+        const gridOpen = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px">`;
+
         let html = "";
-        Object.keys(groups).sort().forEach(cat => {
-            html += `<div style="margin:14px 0 8px;color:var(--text-dim);font-size:11px;letter-spacing:1.5px;text-transform:uppercase">${window.I18N.t("cat." + cat) || cat}</div>`;
-            html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">`;
-            groups[cat].forEach(w => {
-                html += `<div class="cat-item" data-id="${w.id}" style="border:1px solid var(--border);border-radius:8px;padding:10px;cursor:pointer">
-                    <div style="color:var(--accent);font-size:13px">${window.I18N.t(w.title)}</div>
-                    <div style="color:var(--text-dim);font-size:10.5px;margin-top:3px">${w.description || ""}</div>
-                </div>`;
+        if (items.length === 0) {
+            html = `<div style="padding:20px;color:var(--text-dim);text-align:center">No widgets match “${esc(q)}”.</div>`;
+        } else if (this._cat.alpha) {
+            // ---- alphabetical: A–Z with letter headers + a quick-jump index ----
+            items.sort((a, b) => t(a.title).localeCompare(t(b.title)));
+            const byLetter = {};
+            items.forEach(w => { const L = (t(w.title)[0] || "#").toUpperCase(); (byLetter[L] = byLetter[L] || []).push(w); });
+            const letters = Object.keys(byLetter).sort();
+            html += `<div id="catalog-az" style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:10px">` +
+                letters.map(L => `<span class="az-jump" data-l="${L}" style="cursor:pointer;padding:1px 5px;border-radius:4px;color:var(--accent2);font-size:11px">${L}</span>`).join("") + `</div>`;
+            letters.forEach(L => {
+                html += `<div class="az-head" data-letter="${L}" style="margin:12px 0 6px;color:var(--text-dim);font-size:12px;font-weight:700">${L}</div>${gridOpen}`;
+                byLetter[L].forEach(w => html += card(w));
+                html += `</div>`;
             });
-            html += `</div>`;
-        });
+        } else {
+            // ---- grouped by category ----
+            const groups = {};
+            items.forEach(w => { const c = w.category || "other"; (groups[c] = groups[c] || []).push(w); });
+            Object.keys(groups).sort().forEach(c => {
+                groups[c].sort((a, b) => t(a.title).localeCompare(t(b.title)));
+                html += `<div style="margin:12px 0 6px;color:var(--text-dim);font-size:11px;letter-spacing:1.5px;text-transform:uppercase">${esc(this._catLabel(c))} <span style="opacity:.5">(${groups[c].length})</span></div>${gridOpen}`;
+                groups[c].forEach(w => html += card(w));
+                html += `</div>`;
+            });
+        }
         bodyEl.innerHTML = html;
+
         bodyEl.querySelectorAll(".cat-item").forEach(el => {
-            el.onmouseenter = () => el.style.borderColor = "var(--accent)";
-            el.onmouseleave = () => el.style.borderColor = "var(--border)";
             el.onclick = () => { this.addWidget(el.dataset.id, { autoPosition: true }, true); this.catalog.classList.remove("open"); };
         });
-        this.catalog.classList.add("open");
+        bodyEl.querySelectorAll(".az-jump").forEach(el => el.onclick = () => {
+            const head = bodyEl.querySelector(`.az-head[data-letter="${el.dataset.l}"]`);
+            if (head) head.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
     }
 
     addWidget(widgetId, pos, persist) {
