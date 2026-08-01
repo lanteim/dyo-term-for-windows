@@ -27,7 +27,7 @@ window.WIDGETS.obs_datadog = {
               <div id="_dd_list" style="display:flex;flex-direction:column;gap:2px;overflow:auto;font-family:var(--font-mono);font-size:11px;flex:1;margin-top:4px"></div>
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
                 <span id="_dd_meta" style="color:var(--text-dim);font-size:11px"></span>
-                <button id="_dd_edit" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">⚙</button>
+                <button id="_dd_edit" title="Settings" aria-label="Settings" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">⚙</button>
               </div>
             </div>
           </div>`;

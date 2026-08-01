@@ -20,24 +20,27 @@ window.WIDGETS.sysmon = {
         const gb = n => (n / 1e9);
         const tick = async () => {
             if (!alive) return;
-            const [load, mem, time] = await Promise.all([window.dyo.si("currentLoad"), window.dyo.si("mem"), window.dyo.si("time")]);
-            if (load && typeof load.currentLoad === "number") {
-                const p = Math.round(load.currentLoad);
-                $("#_sm_cpu").textContent = p;
-                $("#_sm_cpubar").style.width = p + "%";
-                if (load.avgLoad != null) $("#_sm_load").textContent = load.avgLoad.toFixed(2);
-            }
-            if (mem && mem.total) {
-                const used = mem.active != null ? mem.active : (mem.total - mem.available);
-                $("#_sm_mem").textContent = gb(used).toFixed(1);
-                $("#_sm_memt").textContent = gb(mem.total).toFixed(0);
-                $("#_sm_membar").style.width = Math.round((used / mem.total) * 100) + "%";
-            }
-            if (time && time.uptime != null) {
-                const u = time.uptime;
-                const dd = Math.floor(u / 86400), hh = Math.floor((u % 86400) / 3600), mm = Math.floor((u % 3600) / 60);
-                $("#_sm_up").textContent = `${dd}d ${hh}h ${mm}m`;
-            }
+            try {
+                const [load, mem, time] = await Promise.all([window.dyo.si("currentLoad"), window.dyo.si("mem"), window.dyo.si("time")]);
+                if (!alive) return;
+                if (load && typeof load.currentLoad === "number") {
+                    const p = Math.round(load.currentLoad);
+                    $("#_sm_cpu").textContent = p;
+                    $("#_sm_cpubar").style.width = p + "%";
+                    if (load.avgLoad != null) $("#_sm_load").textContent = load.avgLoad.toFixed(2);
+                }
+                if (mem && mem.total) {
+                    const used = mem.active != null ? mem.active : (mem.total - (mem.available || 0));
+                    $("#_sm_mem").textContent = gb(used).toFixed(1);
+                    $("#_sm_memt").textContent = gb(mem.total).toFixed(0);
+                    $("#_sm_membar").style.width = Math.round((used / mem.total) * 100) + "%";
+                }
+                if (time && time.uptime != null) {
+                    const u = time.uptime;
+                    const dd = Math.floor(u / 86400), hh = Math.floor((u % 86400) / 3600), mm = Math.floor((u % 3600) / 60);
+                    $("#_sm_up").textContent = `${dd}d ${hh}h ${mm}m`;
+                }
+            } catch (e) { /* transient si failure; keep last values */ }
         };
         tick();
         const iv = setInterval(tick, 2000);

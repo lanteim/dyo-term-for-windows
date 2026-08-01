@@ -18,7 +18,7 @@ window.WIDGETS.extra_currency = {
         body.innerHTML = `
             <div style="display:flex;flex-direction:column;height:100%;gap:8px;font-size:12px">
               <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-                <input class="_amt" value="100" style="width:100px"/>
+                <input class="_amt" value="100" placeholder="Amount" title="Amount to convert" style="width:100px"/>
                 <select class="_from" style="width:80px"></select>
                 <span style="color:var(--text-dim)">→</span>
                 <select class="_to" style="width:80px"></select>

@@ -86,7 +86,7 @@ window.WIDGETS.dbx_tablebrowser = {
         const loadTables = async () => {
             const r = await window.dyo.db.query(connId, listSql(curType));
             if (!alive || !connId) return;
-            if (r.error) { $("._list").innerHTML = `<div style="padding:6px;color:var(--danger)">${esc(r.error)}</div>`; return; }
+            if (!r || r.error) { $("._list").innerHTML = `<div style="padding:6px;color:var(--danger)">${esc((r && r.error) || "query failed")}</div>`; return; }
             tables = (r.rows || []).map(tableName).filter(x => x != null).map(String);
             if (selected && tables.indexOf(selected) === -1) selected = null;
             renderList();
@@ -96,7 +96,7 @@ window.WIDGETS.dbx_tablebrowser = {
             if (!selected || !connId) return;
             const r = await window.dyo.db.query(connId, "SELECT * FROM " + quote(curType, selected) + " LIMIT 100");
             if (!alive || !connId) return;
-            if (r.error) { $("._r").innerHTML = `<div style="padding:10px;color:var(--danger)">${esc(r.error)}</div>`; $("._meta").textContent = ""; return; }
+            if (!r || r.error) { $("._r").innerHTML = `<div style="padding:10px;color:var(--danger)">${esc((r && r.error) || "query failed")}</div>`; $("._meta").textContent = ""; return; }
             const cols = r.columns || (r.rows && r.rows[0] ? Object.keys(r.rows[0]) : []);
             const rows = r.rows || [];
             $("._meta").textContent = `${esc(selected)} · ${rows.length} rows` + (r.elapsedMs != null ? ` · ${r.elapsedMs} ms` : "");
@@ -127,7 +127,7 @@ window.WIDGETS.dbx_tablebrowser = {
             const cfg = { type: curType, host: $("._h").value.trim(), port: Number($("._p").value) || Number(PORTS[curType]), user: $("._u").value.trim(), password: $("._pw").value, database: $("._d").value.trim() };
             const res = await window.dyo.db.connect(cfg);
             if (!alive) { if (res && res.id) window.dyo.db.close(res.id); return; }
-            if (res.error) { status("✕ " + res.error, true); return; }
+            if (!res || res.error) { status("✕ " + ((res && res.error) || "connection failed"), true); return; }
             connId = res.id;
             selected = null; tables = [];
             status("● " + String(res.version || curType).split(/[,(]/)[0].trim());

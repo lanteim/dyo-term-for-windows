@@ -62,7 +62,7 @@ window.WIDGETS.web_curl = {
             $("._c_out").textContent = parts.join(" \\\n  ");
         };
         ["._c_m", "._c_u", "._c_h", "._c_b"].forEach(sel => { const el = $(sel); el.addEventListener("input", build); el.addEventListener("change", build); });
-        $("._c_copy").onclick = () => { const t = $("._c_out").textContent; if (t) navigator.clipboard.writeText(t).catch(() => {}); };
+        $("._c_copy").onclick = () => { const t = $("._c_out").textContent; if (t && navigator.clipboard) navigator.clipboard.writeText(t).catch(() => {}); };
         $("._c_run").onclick = () => { const t = $("._c_out").textContent; if (t && window.term && window.term.runInFocused) window.term.runInFocused(t.replace(/\\\n\s*/g, " ") + "\n"); };
         build();
 

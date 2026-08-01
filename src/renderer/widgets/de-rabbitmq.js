@@ -31,7 +31,7 @@ window.WIDGETS.de_rabbitmq = {
               <div id="_rq_list" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;font-family:var(--font-mono);font-size:11px"></div>
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <span id="_rq_meta" style="color:var(--text-dim);font-size:11px"></span>
-                <button id="_rq_edit" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">⚙</button>
+                <button id="_rq_edit" title="Edit connection" aria-label="Edit connection" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">⚙</button>
               </div>
             </div>
           </div>`;

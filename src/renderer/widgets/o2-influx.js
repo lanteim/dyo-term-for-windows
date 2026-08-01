@@ -35,7 +35,7 @@ window.WIDGETS.o2_influx = {
               <div style="flex:1"></div>
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <span id="_meta" style="color:var(--text-dim);font-size:11px"></span>
-                <button id="_edit" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">⚙</button>
+                <button id="_edit" title="Settings" aria-label="Settings" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">⚙</button>
               </div>
             </div>
           </div>`;

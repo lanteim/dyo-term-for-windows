@@ -22,7 +22,7 @@ window.WIDGETS = window.WIDGETS || {};
                     <b id="_dke_n" style="color:var(--accent)">—</b>
                     <span id="_dke_msg" style="color:var(--text-dim);margin-left:auto"></span>
                   </div>
-                  <div id="_dke_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px"></div>
+                  <div id="_dke_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px"><div style="color:var(--text-dim);padding:10px">Loading…</div></div>
                 </div>`;
             const $ = s => body.querySelector(s);
             let alive = true, busy = false;
@@ -39,6 +39,7 @@ window.WIDGETS = window.WIDGETS || {};
                     info.innerHTML = `<span style="color:var(--text)">${esc(r.name)}</span> <span style="color:var(--text-dim)">${esc(r.image)}</span>`;
                     const btn = document.createElement("button");
                     btn.textContent = "sh";
+                    btn.title = "Open a shell (docker exec -it) in " + r.name;
                     btn.style.cssText = "background:var(--accent);color:var(--bg-elevated);border:none;border-radius:6px;padding:4px 12px;cursor:pointer;flex:none";
                     btn.addEventListener("click", () => {
                         window.term.runInFocused("docker exec -it " + r.id + " sh\n");

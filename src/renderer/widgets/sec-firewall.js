@@ -17,7 +17,7 @@ window.WIDGETS.sec_firewall = {
             <div style="display:flex;flex-direction:column;height:100%;gap:6px;font-size:12px">
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="color:var(--text-dim)">Application Firewall</span>
-                <button class="_fw_go" style="margin-left:auto;background:transparent;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:3px 9px;cursor:pointer;font-size:11px">↻</button>
+                <button class="_fw_go" title="Refresh" aria-label="Refresh" style="margin-left:auto;background:transparent;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:3px 9px;cursor:pointer;font-size:11px">↻</button>
               </div>
               <div class="_fw_body" style="flex:1;overflow:auto"><div style="color:var(--text-dim)">Loading…</div></div>
             </div>`;

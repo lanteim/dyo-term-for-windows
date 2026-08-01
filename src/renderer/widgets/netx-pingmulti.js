@@ -22,7 +22,7 @@ window.WIDGETS = window.WIDGETS || {};
                   <div style="display:flex;align-items:center;gap:8px">
                     <span style="color:var(--text-dim)">📡 PING</span>
                     <input class="_add" placeholder="add host…" style="flex:1;min-width:0" />
-                    <button class="_addb" style="flex:none">＋</button>
+                    <button class="_addb" style="flex:none" title="Add host">＋</button>
                     <span class="_msg" style="color:var(--text-dim);margin-left:auto"></span>
                   </div>
                   <div class="_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:4px"></div>

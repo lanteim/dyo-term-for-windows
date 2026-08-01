@@ -21,7 +21,7 @@ window.WIDGETS = window.WIDGETS || {};
                     <span style="color:var(--text-dim)">🏗️ SKAFFOLD</span>
                     <span id="_ctsk_sum" style="color:var(--text-dim);margin-left:auto"></span>
                   </div>
-                  <div id="_ctsk_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:4px"></div>
+                  <div id="_ctsk_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:4px"><div style="color:var(--text-dim);padding:10px">Loading…</div></div>
                 </div>`;
             const $ = s => body.querySelector(s);
             let alive = true, busy = false;

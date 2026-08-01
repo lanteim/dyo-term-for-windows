@@ -27,7 +27,7 @@ window.WIDGETS["dev-loc"] = {
                 if (!c) { $("#_loc_n").textContent = "—"; $("#_loc_list").innerHTML = `<div style="color:var(--text-dim)">No project folder</div>`; return; }
                 const res = await window.dyo.exec("find", [".", "-type", "f", "-not", "-path", "*/node_modules/*", "-not", "-path", "*/.git/*", "-not", "-path", "*/dist/*", "-not", "-path", "*/build/*"], { cwd: c, timeout: 8000 });
                 if (!res || res.code !== 0) { $("#_loc_list").innerHTML = `<div style="color:var(--danger)">find failed</div>`; return; }
-                const files = res.stdout.split("\n").filter(l => l.trim());
+                const files = (res.stdout || "").split("\n").filter(l => l.trim());
                 $("#_loc_n").textContent = files.length.toLocaleString();
                 const tally = {};
                 for (const f of files) {

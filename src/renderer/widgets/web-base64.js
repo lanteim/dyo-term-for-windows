@@ -59,7 +59,7 @@ window.WIDGETS.web_base64 = {
         $("._b_enc").onclick = encode;
         $("._b_dec").onclick = decode;
         $("._b_swap").onclick = () => { const v = $("._b_out").value; $("._b_out").value = $("._b_in").value; $("._b_in").value = v; };
-        $("._b_copy").onclick = () => { if ($("._b_out").value) navigator.clipboard.writeText($("._b_out").value).catch(() => {}); };
+        $("._b_copy").onclick = () => { if ($("._b_out").value && navigator.clipboard) navigator.clipboard.writeText($("._b_out").value).catch(() => {}); };
 
         return { destroy: () => { alive = false; } };
     }

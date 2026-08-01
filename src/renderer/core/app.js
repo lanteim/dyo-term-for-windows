@@ -5,6 +5,7 @@
 (async function main() {
     const info = await window.dyo.appInfo();
     window.__DYO_NOWEBGL = info.noWebgl;
+    window.__PLATFORM = info.platform;
     const settings = await window.dyo.settings.get();
     await window.ThemeEngine.load();
     window.ThemeEngine.apply(settings.theme in window.ThemeEngine.themes ? settings.theme : "stark");
@@ -129,20 +130,53 @@
         });
     }
 
-    // ---- keybindings (⌘-based, iTerm-flavoured) ----
+    // ---- keybindings ----
+    // macOS: ⌘-based (iTerm-flavoured). Windows/Linux: Ctrl+Shift-based, so the
+    // app shortcuts never clash with shell control keys (Ctrl+C/D/W/F/E/K).
+    const isMac = window.__PLATFORM === "darwin";
     window.addEventListener("keydown", e => {
-        const cmd = e.metaKey;
-        if (!cmd) return;
-        if (e.key === "t") { e.preventDefault(); term.newTab(); }
-        else if (e.key === "d" && !e.shiftKey) { e.preventDefault(); term.splitFocused("vertical"); }
-        else if ((e.key === "d" || e.key === "D") && e.shiftKey) { e.preventDefault(); term.splitFocused("horizontal"); }
-        else if (e.key === "w") { e.preventDefault(); term.closeFocusedPane(); }
-        else if (e.key === "f") { e.preventDefault(); toggleSearch(); }
-        else if (e.key === "e") { e.preventDefault(); toggleEdit(); }
-        else if (e.key === "k") { e.preventDefault(); openThemes(); }
-        else if (e.key === "Enter") { e.preventDefault(); window.dyo.win("toggleFullscreen"); }
-        else if (/^[1-9]$/.test(e.key)) { e.preventDefault(); term.focusTab(parseInt(e.key, 10) - 1); }
+        if (!isMac && e.key === "F11") { e.preventDefault(); window.dyo.win("toggleFullscreen"); return; }
+        const primary = isMac ? e.metaKey : (e.ctrlKey && e.shiftKey);
+        if (!primary) return;
+        const k = (e.key || "").toLowerCase();
+        const digit = /^Digit([1-9])$/.exec(e.code || "");
+        if (k === "t") { e.preventDefault(); term.newTab(); }
+        else if (k === "w") { e.preventDefault(); term.closeFocusedPane(); }
+        else if (k === "f") { e.preventDefault(); toggleSearch(); }
+        else if (k === "e") { e.preventDefault(); toggleEdit(); }
+        else if (k === "k") { e.preventDefault(); openThemes(); }
+        else if (digit) { e.preventDefault(); term.focusTab(parseInt(digit[1], 10) - 1); }
+        else if (isMac && k === "enter") { e.preventDefault(); window.dyo.win("toggleFullscreen"); }
+        else if (k === "d") { e.preventDefault(); term.splitFocused(isMac && e.shiftKey ? "horizontal" : "vertical"); }
+        else if (!isMac && k === "h") { e.preventDefault(); term.splitFocused("horizontal"); }
     });
+
+    // Copy/paste in form fields (the OS menu deliberately doesn't grab these keys
+    // so the terminal can copy its own selection — see core/terminal.js). Handled
+    // here for inputs/textareas; skips the terminal panes, which handle their own.
+    document.addEventListener("keydown", async e => {
+        const k = (e.key || "").toLowerCase();
+        const copy = isMac ? (e.metaKey && !e.shiftKey && k === "c") : (e.ctrlKey && e.shiftKey && k === "c");
+        const paste = isMac ? (e.metaKey && !e.shiftKey && k === "v") : (e.ctrlKey && e.shiftKey && k === "v");
+        if (!copy && !paste) return;
+        const ae = document.activeElement;
+        if (!ae || (ae.closest && ae.closest(".pane"))) return; // terminal handles itself
+        const isField = ae.tagName === "INPUT" || ae.tagName === "TEXTAREA";
+        if (!isField && !ae.isContentEditable) return;
+        if (copy) {
+            let text = isField ? ae.value.substring(ae.selectionStart, ae.selectionEnd) : String(window.getSelection());
+            if (text) { e.preventDefault(); navigator.clipboard.writeText(text).catch(() => {}); }
+        } else if (paste && isField) {
+            e.preventDefault();
+            const t = await navigator.clipboard.readText().catch(() => "");
+            if (t) {
+                const s = ae.selectionStart, en = ae.selectionEnd;
+                ae.value = ae.value.slice(0, s) + t + ae.value.slice(en);
+                ae.selectionStart = ae.selectionEnd = s + t.length;
+                ae.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+        }
+    }, true);
 })();
 
 function escapeHtml(s) {

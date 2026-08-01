@@ -34,7 +34,7 @@ window.WIDGETS.api_openapi = {
             </details>
             <div class="metric-row"><span class="k" id="_oa_title">—</span><span class="v"><b id="_oa_cnt" style="color:var(--accent2)">0</b> ops</span></div>
             <div id="_oa_msg" style="color:var(--text-dim);font-size:11px"></div>
-            <div id="_oa_list" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;font-family:var(--font-mono);font-size:11.5px"></div>
+            <div id="_oa_list" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;font-family:var(--font-mono);font-size:11.5px"><div style="padding:10px;color:var(--text-dim)">Load a URL or paste OpenAPI/Swagger JSON to list endpoints.</div></div>
           </div>`;
         const $ = s => body.querySelector(s);
         let all = [];

@@ -47,7 +47,7 @@ window.WIDGETS.web_urlencode = {
         $("._u_dec").onclick = () => run(decodeURIComponent, "decoded");
         $("._u_encf").onclick = () => run(encodeURI, "encoded (full URI)");
         $("._u_swap").onclick = () => { const v = $("._u_out").value; $("._u_out").value = $("._u_in").value; $("._u_in").value = v; };
-        $("._u_copy").onclick = () => { if ($("._u_out").value) navigator.clipboard.writeText($("._u_out").value).catch(() => {}); };
+        $("._u_copy").onclick = () => { if ($("._u_out").value && navigator.clipboard) navigator.clipboard.writeText($("._u_out").value).catch(() => {}); };
 
         return { destroy: () => { alive = false; } };
     }

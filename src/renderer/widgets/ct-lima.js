@@ -21,7 +21,7 @@ window.WIDGETS = window.WIDGETS || {};
                     <span style="color:var(--text-dim)">🖥️ LIMA</span>
                     <span id="_ctlm_sum" style="color:var(--text-dim);margin-left:auto;font-variant-numeric:tabular-nums"></span>
                   </div>
-                  <div id="_ctlm_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:2px"></div>
+                  <div id="_ctlm_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:2px"><div style="color:var(--text-dim);padding:10px">Loading…</div></div>
                 </div>`;
             const $ = s => body.querySelector(s);
             let alive = true, busy = false;
@@ -37,13 +37,13 @@ window.WIDGETS = window.WIDGETS || {};
                 busy = true;
                 try {
                     const res = await window.dyo.exec("limactl", ["list", "--json"], { timeout: 8000 });
-                    if (!res || (res.code !== 0 && !res.stdout.trim())) {
+                    if (!res || (res.code !== 0 && !(res.stdout || "").trim())) {
                         $("#_ctlm_sum").textContent = "";
                         $("#_ctlm_body").innerHTML = `<div style="color:var(--text-dim);padding:10px">${esc(diagnose(res))}</div>`;
                         return;
                     }
                     const vms = [];
-                    res.stdout.split("\n").forEach(l => {
+                    (res.stdout || "").split("\n").forEach(l => {
                         l = l.trim();
                         if (!l) return;
                         try { vms.push(JSON.parse(l)); } catch (e) { }

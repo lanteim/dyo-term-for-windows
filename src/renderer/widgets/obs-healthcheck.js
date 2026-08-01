@@ -31,7 +31,7 @@ window.WIDGETS.obs_healthcheck = {
               <div class="metric-row"><span class="k">URL</span><span class="v" id="_hc_url_v" style="max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span></div>
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
                 <span id="_hc_meta" style="color:var(--text-dim);font-size:11px"></span>
-                <button id="_hc_edit" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">⚙</button>
+                <button id="_hc_edit" title="Settings" aria-label="Settings" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">⚙</button>
               </div>
             </div>
           </div>`;

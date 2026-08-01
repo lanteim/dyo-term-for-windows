@@ -20,7 +20,7 @@ window.WIDGETS.iac_tfstate = {
             <div id="_ts_list" style="flex:1;overflow:auto;font-family:var(--font-mono);font-size:11px;display:flex;flex-direction:column;gap:1px"></div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
               <span id="_ts_meta" style="color:var(--text-dim);font-size:10.5px"></span>
-              <button id="_ts_ref" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">↻</button>
+              <button id="_ts_ref" title="Refresh" aria-label="Refresh" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">↻</button>
             </div>
           </div>`;
         const $ = s => body.querySelector(s);

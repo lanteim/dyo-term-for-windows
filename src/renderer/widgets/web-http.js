@@ -32,7 +32,7 @@ window.WIDGETS.web_http = {
                 <textarea class="_h_b" spellcheck="false" placeholder='{"key":"value"}' style="${inputCss};flex:1;resize:none"></textarea>
               </div>
               <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-height:0">
-                <div class="_h_status" style="color:var(--text-dim);min-height:16px"></div>
+                <div class="_h_status" style="color:var(--text-dim);min-height:16px">Enter a URL and press Send.</div>
                 <pre class="_h_out" style="${inputCss};flex:1;margin:0;overflow:auto;white-space:pre-wrap;word-break:break-word"></pre>
               </div>
             </div>

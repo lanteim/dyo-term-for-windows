@@ -41,7 +41,7 @@ window.WIDGETS.aws_s3 = {
                     return;
                 }
                 $("#_s3_msg").textContent = "";
-                const lines = r.stdout.split("\n").map(l => l.trim()).filter(Boolean);
+                const lines = String(r.stdout || "").split("\n").map(l => l.trim()).filter(Boolean);
                 if (!lines.length) { $("#_s3_sum").textContent = "no buckets"; $("#_s3_rows").innerHTML = ""; return; }
                 // format: "2024-01-02 15:04:05 bucket-name"
                 const rows = lines.slice(0, 200).map(l => {

@@ -33,7 +33,7 @@ window.WIDGETS.k8sctx = {
                     $("#_k8c_list").innerHTML = "";
                     return;
                 }
-                const current = cur.stdout.trim();
+                const current = (cur.stdout || "").trim();
                 $("#_k8c_ctx").textContent = current || "—";
                 const [ns, ctxs] = await Promise.all([
                     kc(["config", "view", "--minify", "-o", "jsonpath={..namespace}"]),

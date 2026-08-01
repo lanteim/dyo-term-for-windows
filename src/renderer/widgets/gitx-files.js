@@ -79,7 +79,7 @@ window.WIDGETS.gitfiles = {
                     list.innerHTML = `<div style="color:var(--text-dim)">${esc((res && res.stderr && res.stderr.trim()) || "unable to read status")}</div>`;
                     return;
                 }
-                render(parse(res.stdout));
+                render(parse(res.stdout || ""));
             } catch (e) {
                 list.innerHTML = `<div style="color:var(--danger)">error reading status</div>`;
             } finally {

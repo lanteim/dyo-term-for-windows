@@ -15,7 +15,7 @@ window.WIDGETS["dev-todos"] = {
         body.innerHTML = `
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
                 <span id="_td_sum" style="font-size:11px;color:var(--text-dim)">scanning…</span>
-                <button id="_td_re" style="margin-left:auto;font-size:11px;background:var(--bg-elevated);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 8px;cursor:pointer">↻</button>
+                <button id="_td_re" title="Refresh scan" aria-label="Refresh scan" style="margin-left:auto;font-size:11px;background:var(--bg-elevated);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 8px;cursor:pointer">↻ Refresh</button>
             </div>
             <div id="_td_list" style="overflow:auto;max-height:calc(100% - 26px);font-family:var(--font-mono);font-size:12px"></div>`;
         const $ = s => body.querySelector(s);

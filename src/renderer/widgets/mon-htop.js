@@ -30,7 +30,7 @@ window.WIDGETS.htop = {
                 <span style="width:64px;flex:0 0 auto;text-align:right">${t("htop.mem")}</span>
               </div>
               <div id="_ht_rows" style="flex:1 1 auto;overflow:auto"></div>
-              <div id="_ht_msg" style="color:var(--text-dim);padding:6px 4px"></div>
+              <div id="_ht_msg" style="color:var(--text-dim);padding:6px 4px">Loading…</div>
             </div>`;
         const rowsEl = body.querySelector("#_ht_rows");
         const msgEl = body.querySelector("#_ht_msg");

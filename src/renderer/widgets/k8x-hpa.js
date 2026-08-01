@@ -42,7 +42,7 @@ window.WIDGETS.k8x_hpa = {
                     return;
                 }
                 $("#_kh_msg").textContent = "";
-                const lines = r.stdout.split("\n").map(l => l.trim()).filter(Boolean).slice(0, 200);
+                const lines = (r.stdout || "").split("\n").map(l => l.trim()).filter(Boolean).slice(0, 200);
                 if (!lines.length) { $("#_kh_sum").textContent = "no HPA defined"; $("#_kh_rows").innerHTML = ""; return; }
                 let maxed = 0;
                 const rows = lines.map(l => {

@@ -42,7 +42,7 @@ window.WIDGETS.k8spods = {
                     return;
                 }
                 $("#_k8p_msg").textContent = "";
-                const lines = r.stdout.split("\n").map(l => l.trim()).filter(Boolean).slice(0, 200);
+                const lines = (r.stdout || "").split("\n").map(l => l.trim()).filter(Boolean).slice(0, 200);
                 if (!lines.length) {
                     $("#_k8p_sum").textContent = "no pods";
                     $("#_k8p_rows").innerHTML = "";

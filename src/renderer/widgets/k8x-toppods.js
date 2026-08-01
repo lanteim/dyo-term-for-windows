@@ -47,7 +47,7 @@ window.WIDGETS.k8x_toppods = {
                     return;
                 }
                 $("#_kt_msg").textContent = "";
-                let lines = r.stdout.split("\n").map(l => l.trim()).filter(Boolean);
+                let lines = (r.stdout || "").split("\n").map(l => l.trim()).filter(Boolean);
                 if (!lines.length) { $("#_kt_sum").textContent = "no data"; $("#_kt_rows").innerHTML = ""; return; }
                 const parsed = lines.map(l => {
                     const c = l.split(/\s+/);

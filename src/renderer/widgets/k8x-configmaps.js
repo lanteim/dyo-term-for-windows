@@ -41,7 +41,7 @@ window.WIDGETS.k8x_configmaps = {
                     return;
                 }
                 $("#_kc_msg").textContent = "";
-                const lines = r.stdout.split("\n").map(l => l.trim()).filter(Boolean).slice(0, 200);
+                const lines = (r.stdout || "").split("\n").map(l => l.trim()).filter(Boolean).slice(0, 200);
                 if (!lines.length) { $("#_kc_sum").textContent = "no configmaps"; $("#_kc_rows").innerHTML = ""; return; }
                 const rows = lines.map(l => {
                     const c = l.split(/\s+/);

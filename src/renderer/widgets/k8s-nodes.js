@@ -41,7 +41,7 @@ window.WIDGETS.k8snodes = {
                     return;
                 }
                 $("#_k8n_msg").textContent = "";
-                const lines = r.stdout.split("\n").map(l => l.trim()).filter(Boolean).slice(0, 200);
+                const lines = (r.stdout || "").split("\n").map(l => l.trim()).filter(Boolean).slice(0, 200);
                 if (!lines.length) {
                     $("#_k8n_sum").textContent = "no nodes";
                     $("#_k8n_rows").innerHTML = "";

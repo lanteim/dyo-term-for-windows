@@ -25,7 +25,7 @@ window.WIDGETS = window.WIDGETS || {};
                     <button id="_dkl_go" style="background:var(--accent);color:var(--bg-elevated);border:none;border-radius:6px;padding:5px 10px;cursor:pointer">Tail</button>
                     <span id="_dkl_msg" style="color:var(--text-dim)"></span>
                   </div>
-                  <pre id="_dkl_out" style="flex:1;overflow:auto;margin:0;border:1px solid var(--border);border-radius:6px;padding:8px;font-family:var(--font-mono);font-size:11px;white-space:pre-wrap;color:var(--text)"></pre>
+                  <pre id="_dkl_out" style="flex:1;overflow:auto;margin:0;border:1px solid var(--border);border-radius:6px;padding:8px;font-family:var(--font-mono);font-size:11px;white-space:pre-wrap;color:var(--text)">…</pre>
                 </div>`;
             const $ = s => body.querySelector(s);
             let alive = true, busy = false;

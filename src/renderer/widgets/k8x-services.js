@@ -42,7 +42,7 @@ window.WIDGETS.k8x_services = {
                     return;
                 }
                 $("#_ks_msg").textContent = "";
-                const lines = r.stdout.split("\n").map(l => l.trim()).filter(Boolean).slice(0, 200);
+                const lines = (r.stdout || "").split("\n").map(l => l.trim()).filter(Boolean).slice(0, 200);
                 if (!lines.length) { $("#_ks_sum").textContent = "no services"; $("#_ks_rows").innerHTML = ""; return; }
                 let lb = 0;
                 const rows = lines.map(l => {

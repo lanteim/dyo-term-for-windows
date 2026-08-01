@@ -21,7 +21,7 @@ window.WIDGETS = window.WIDGETS || {};
                     <span style="color:var(--text-dim)">🐳 DISK USAGE (df -v)</span>
                     <span id="_dkd_msg" style="color:var(--text-dim);margin-left:auto"></span>
                   </div>
-                  <div id="_dkd_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:6px"></div>
+                  <div id="_dkd_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:6px"><div style="color:var(--text-dim)">Loading…</div></div>
                 </div>`;
             const $ = s => body.querySelector(s);
             let alive = true, busy = false;

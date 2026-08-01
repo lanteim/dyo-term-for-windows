@@ -35,6 +35,7 @@ window.WIDGETS.dbx_pglocks = {
         const $ = s => body.querySelector(s);
         ["._h", "._p", "._u", "._pw", "._d"].forEach(s => { $(s).style.cssText += ";background:var(--bg-elevated);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-family:var(--font-mono)"; });
         $("._go").style.cssText += ";background:transparent;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer";
+        $("._r").innerHTML = `<div style="padding:10px;color:var(--text-dim)">Not connected — enter connection details and press Connect.</div>`;
 
         (async () => {
             const st = await window.dyo.settings.get();
@@ -55,7 +56,7 @@ window.WIDGETS.dbx_pglocks = {
             const r = await window.dyo.db.query(connId, SQL);
             busy = false;
             if (!alive || !connId) return;
-            if (r.error) { $("._r").innerHTML = `<div style="padding:10px;color:var(--danger)">${esc(r.error)}</div>`; return; }
+            if (!r || r.error) { $("._r").innerHTML = `<div style="padding:10px;color:var(--danger)">${esc((r && r.error) || "query failed")}</div>`; return; }
             const rows = r.rows || [];
             $("._sum").innerHTML = rows.length
                 ? `<span style="color:var(--danger)">● ${rows.length} blocked ${rows.length === 1 ? "query" : "queries"}</span>`
@@ -82,7 +83,7 @@ window.WIDGETS.dbx_pglocks = {
             const cfg = { type: TYPE, host: $("._h").value.trim(), port: Number($("._p").value) || 5432, user: $("._u").value.trim(), password: $("._pw").value, database: $("._d").value.trim() };
             const res = await window.dyo.db.connect(cfg);
             if (!alive) { if (res && res.id) window.dyo.db.close(res.id); return; }
-            if (res.error) { status("✕ " + res.error, true); return; }
+            if (!res || res.error) { status("✕ " + ((res && res.error) || "connection failed"), true); return; }
             connId = res.id;
             status("● " + String(res.version || TYPE).split(/[,(]/)[0].trim());
             const patch = {}; patch[SKEY] = { host: cfg.host, port: cfg.port, user: cfg.user, database: cfg.database };

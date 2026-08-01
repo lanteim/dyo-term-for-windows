@@ -67,6 +67,8 @@ window.WIDGETS.p2_kanban = {
                     const mk = (label, dir, disabled) => {
                         const b = document.createElement("button");
                         b.textContent = label;
+                        b.title = dir < 0 ? "Move left" : "Move right";
+                        b.setAttribute("aria-label", b.title);
                         b.disabled = disabled;
                         b.style.cssText = "background:none;border:1px solid var(--border);color:var(--text);border-radius:4px;padding:1px 6px;font-size:11px;cursor:pointer" + (disabled ? ";opacity:.3;cursor:default" : "");
                         if (!disabled) b.onclick = () => move(c.id, dir);

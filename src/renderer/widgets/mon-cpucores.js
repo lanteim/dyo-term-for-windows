@@ -14,7 +14,7 @@ window.WIDGETS.cpucores = {
         body.innerHTML = `
             <div style="height:100%;display:flex;flex-direction:column">
               <div id="_cc_bars" style="flex:1 1 auto;overflow:auto;display:flex;flex-direction:column;gap:4px"></div>
-              <div id="_cc_msg" style="color:var(--text-dim);padding-top:4px;font-size:11px"></div>
+              <div id="_cc_msg" style="color:var(--text-dim);padding-top:4px;font-size:11px">Loading…</div>
             </div>`;
         const barsEl = body.querySelector("#_cc_bars");
         const msgEl = body.querySelector("#_cc_msg");

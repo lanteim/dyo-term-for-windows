@@ -29,7 +29,7 @@ window.WIDGETS.de_spark = {
               <div id="_sp_list" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;font-family:var(--font-mono);font-size:11px"></div>
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <span id="_sp_meta" style="color:var(--text-dim);font-size:11px"></span>
-                <button id="_sp_edit" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">⚙</button>
+                <button id="_sp_edit" title="Edit connection" aria-label="Edit connection" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">⚙</button>
               </div>
             </div>
           </div>`;

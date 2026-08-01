@@ -14,9 +14,9 @@ window.WIDGETS["prod-calendar"] = {
         body.innerHTML = `
             <div style="display:flex;flex-direction:column;height:100%;gap:6px">
                 <div style="display:flex;align-items:center;justify-content:space-between">
-                    <button id="_cal_prev" style="background:var(--bg-elevated);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:13px">‹</button>
+                    <button id="_cal_prev" title="Previous month" aria-label="Previous month" style="background:var(--bg-elevated);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:13px">‹</button>
                     <div id="_cal_title" style="font-size:13px;font-weight:500;color:var(--text);letter-spacing:1px"></div>
-                    <button id="_cal_next" style="background:var(--bg-elevated);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:13px">›</button>
+                    <button id="_cal_next" title="Next month" aria-label="Next month" style="background:var(--bg-elevated);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:13px">›</button>
                 </div>
                 <div id="_cal_grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;flex:1"></div>
             </div>`;

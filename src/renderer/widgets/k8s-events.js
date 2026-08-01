@@ -33,7 +33,7 @@ window.WIDGETS.k8sevents = {
                     return;
                 }
                 $("#_k8e_msg").textContent = "";
-                const all = r.stdout.split("\n").map(l => l.trim()).filter(Boolean);
+                const all = (r.stdout || "").split("\n").map(l => l.trim()).filter(Boolean);
                 const lines = all.slice(-12).reverse();
                 if (!lines.length) {
                     $("#_k8e_list").innerHTML = `<div style="color:var(--text-dim)">no recent events</div>`;

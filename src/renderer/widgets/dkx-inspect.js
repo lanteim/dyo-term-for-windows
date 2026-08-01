@@ -24,7 +24,7 @@ window.WIDGETS = window.WIDGETS || {};
                       style="background:var(--bg-elevated);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-family:var(--font-mono);flex:1;min-width:60px">
                     <button id="_dki_go" style="background:var(--accent);color:var(--bg-elevated);border:none;border-radius:6px;padding:5px 10px;cursor:pointer">Go</button>
                   </div>
-                  <div id="_dki_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:8px"></div>
+                  <div id="_dki_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:8px"><div style="color:var(--text-dim)">…</div></div>
                 </div>`;
             const $ = s => body.querySelector(s);
             let alive = true, busy = false;

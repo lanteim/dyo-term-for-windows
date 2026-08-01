@@ -20,7 +20,7 @@ window.WIDGETS.iac_tfworkspaces = {
             <div id="_tw_list" style="flex:1;overflow:auto;font-family:var(--font-mono);font-size:12px;display:flex;flex-direction:column;gap:2px"></div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
               <span id="_tw_meta" style="color:var(--text-dim);font-size:10.5px"></span>
-              <button id="_tw_ref" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">↻</button>
+              <button id="_tw_ref" title="Refresh" aria-label="Refresh" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">↻</button>
             </div>
           </div>`;
         const $ = s => body.querySelector(s);

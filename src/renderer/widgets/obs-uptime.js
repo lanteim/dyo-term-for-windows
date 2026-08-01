@@ -24,7 +24,7 @@ window.WIDGETS.obs_uptime = {
               <div id="_up_list" style="display:flex;flex-direction:column;gap:3px;overflow:auto;font-family:var(--font-mono);font-size:11px;flex:1"></div>
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
                 <span id="_up_meta" style="color:var(--text-dim);font-size:11px"></span>
-                <button id="_up_edit" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">⚙</button>
+                <button id="_up_edit" title="Settings" aria-label="Settings" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">⚙</button>
               </div>
             </div>
           </div>`;

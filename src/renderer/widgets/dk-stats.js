@@ -22,7 +22,7 @@ window.WIDGETS = window.WIDGETS || {};
                     <b id="_dkst_n" style="color:var(--accent)">—</b>
                     <span id="_dkst_msg" style="color:var(--text-dim);margin-left:auto"></span>
                   </div>
-                  <div id="_dkst_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px"></div>
+                  <div id="_dkst_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px"><div style="color:var(--text-dim);padding:10px">Loading…</div></div>
                 </div>`;
             const $ = s => body.querySelector(s);
             let alive = true, busy = false;

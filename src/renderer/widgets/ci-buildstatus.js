@@ -28,7 +28,7 @@ window.WIDGETS.ci_buildstatus = {
               <div id="_bs_err" style="color:var(--danger);font-size:11px"></div>
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
                 <span id="_bs_meta" style="color:var(--text-dim);font-size:11px"></span>
-                <button id="_bs_edit" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">⚙</button>
+                <button id="_bs_edit" title="Settings" aria-label="Settings" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px">⚙</button>
               </div>
             </div>
           </div>`;

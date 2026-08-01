@@ -26,7 +26,7 @@ window.WIDGETS.web_webhook = {
             </div>
             <label style="color:var(--text-dim)">Test payload (JSON)</label>
             <textarea class="_k_b" spellcheck="false" style="${inputCss};height:70px;resize:none"></textarea>
-            <div class="_k_status" style="color:var(--text-dim);min-height:16px"></div>
+            <div class="_k_status" style="color:var(--text-dim);min-height:16px">Send a test request to inspect the response.</div>
             <pre class="_k_out" style="${inputCss};flex:1;margin:0;overflow:auto;white-space:pre-wrap;word-break:break-word"></pre>
           </div>`;
         const $ = s => body.querySelector(s);

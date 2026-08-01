@@ -21,7 +21,7 @@ window.WIDGETS = window.WIDGETS || {};
                     <span style="color:var(--text-dim)">🧩 COMPOSE</span>
                     <span id="_dkcp_msg" style="color:var(--text-dim);margin-left:auto"></span>
                   </div>
-                  <div id="_dkcp_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:2px"></div>
+                  <div id="_dkcp_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:2px"><div style="color:var(--text-dim);padding:10px">Loading…</div></div>
                 </div>`;
             const $ = s => body.querySelector(s);
             let alive = true, busy = false;

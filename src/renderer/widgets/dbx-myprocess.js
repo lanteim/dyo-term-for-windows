@@ -35,6 +35,7 @@ window.WIDGETS.dbx_myprocess = {
         const $ = s => body.querySelector(s);
         ["._h", "._p", "._u", "._pw", "._d"].forEach(s => { $(s).style.cssText += ";background:var(--bg-elevated);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-family:var(--font-mono)"; });
         $("._go").style.cssText += ";background:transparent;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer";
+        $("._r").innerHTML = `<div style="padding:10px;color:var(--text-dim)">Not connected — enter connection details and press Connect.</div>`;
 
         (async () => {
             const st = await window.dyo.settings.get();
@@ -55,7 +56,7 @@ window.WIDGETS.dbx_myprocess = {
             const r = await window.dyo.db.query(connId, "SHOW FULL PROCESSLIST");
             busy = false;
             if (!alive || !connId) return;
-            if (r.error) { $("._r").innerHTML = `<div style="padding:10px;color:var(--danger)">${esc(r.error)}</div>`; return; }
+            if (!r || r.error) { $("._r").innerHTML = `<div style="padding:10px;color:var(--danger)">${esc((r && r.error) || "query failed")}</div>`; return; }
             const rows = r.rows || [];
             const norm = rows.map(x => { const o = {}; COLS.forEach(c => { o[c] = x[c] != null ? x[c] : x[c.toLowerCase()] != null ? x[c.toLowerCase()] : x[c.toUpperCase()]; }); return o; });
             let running = 0, sleeping = 0;
@@ -85,7 +86,7 @@ window.WIDGETS.dbx_myprocess = {
             const cfg = { type: TYPE, host: $("._h").value.trim(), port: Number($("._p").value) || 3306, user: $("._u").value.trim(), password: $("._pw").value, database: $("._d").value.trim() };
             const res = await window.dyo.db.connect(cfg);
             if (!alive) { if (res && res.id) window.dyo.db.close(res.id); return; }
-            if (res.error) { status("✕ " + res.error, true); return; }
+            if (!res || res.error) { status("✕ " + ((res && res.error) || "connection failed"), true); return; }
             connId = res.id;
             status("● " + String(res.version || TYPE).split(/[,(]/)[0].trim());
             const patch = {}; patch[SKEY] = { host: cfg.host, port: cfg.port, user: cfg.user, database: cfg.database };

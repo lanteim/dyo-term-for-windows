@@ -47,6 +47,8 @@ window.WIDGETS.db = {
         [".db-connect", ".db-run"].forEach(s => {
             $(s).style.cssText += ";background:transparent;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer";
         });
+        $(".db-status").textContent = "not connected";
+        $(".db-result").innerHTML = `<div style="padding:10px;color:var(--text-dim)">Not connected — enter connection details and press Connect.</div>`;
         const PORTS = { postgres: "5432", mysql: "3306", clickhouse: "8123", mongodb: "27017", redis: "6379", mssql: "1433" };
         const HINTS = {
             postgres: "SELECT … — ⌘↵ to run", mysql: "SELECT … — ⌘↵ to run",
@@ -73,7 +75,7 @@ window.WIDGETS.db = {
                 password: $(".db-pass").value,
                 database: $(".db-name").value.trim()
             });
-            if (res.error) { $(".db-status").textContent = "✕ " + res.error; $(".db-status").style.color = "var(--danger)"; return; }
+            if (!res || res.error) { $(".db-status").textContent = "✕ " + ((res && res.error) || "connection failed"); $(".db-status").style.color = "var(--danger)"; return; }
             connId = res.id;
             $(".db-status").style.color = "var(--accent2)";
             $(".db-status").textContent = "● " + (res.version || res.type).split(/[,(]/)[0].trim();
@@ -87,7 +89,7 @@ window.WIDGETS.db = {
             if (!sql) return;
             $(".db-meta").textContent = "running…";
             const r = await window.dyo.db.query(connId, sql);
-            if (r.error) { $(".db-result").innerHTML = `<div style="padding:10px;color:var(--danger)">${esc(r.error)}</div>`; $(".db-meta").textContent = ""; return; }
+            if (!r || r.error) { $(".db-result").innerHTML = `<div style="padding:10px;color:var(--danger)">${esc((r && r.error) || "query failed")}</div>`; $(".db-meta").textContent = ""; return; }
             $(".db-meta").textContent = `${r.rowCount} rows · ${r.elapsedMs} ms`;
             const cols = r.columns || [];
             const rows = (r.rows || []).slice(0, 500);

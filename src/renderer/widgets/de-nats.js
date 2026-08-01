@@ -25,7 +25,7 @@ window.WIDGETS.de_nats = {
                 <span id="_nt_dot" style="color:var(--text-dim)">●</span>
                 <span id="_nt_name" style="color:var(--accent);font-weight:600">nats</span>
                 <span id="_nt_ver" style="color:var(--text-dim)"></span>
-                <button id="_nt_edit" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;margin-left:auto">⚙</button>
+                <button id="_nt_edit" title="Edit connection" aria-label="Edit connection" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;margin-left:auto">⚙</button>
               </div>
               <div id="_nt_grid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px"></div>
               <div id="_nt_meta" style="color:var(--text-dim);font-size:11px;margin-top:auto"></div>

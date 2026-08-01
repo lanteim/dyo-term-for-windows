@@ -32,7 +32,7 @@ window.WIDGETS.api_httpbin = {
               </div>
             </details>
             <div id="_hb_stats" style="display:flex;gap:14px;flex-wrap:wrap"></div>
-            <div id="_hb_msg" style="color:var(--text-dim);font-size:11px"></div>
+            <div id="_hb_msg" style="color:var(--text-dim);font-size:11px">Enter a URL and press Send.</div>
             <div id="_hb_out" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;font-family:var(--font-mono);font-size:11px;padding:6px;white-space:pre-wrap;word-break:break-all"></div>
           </div>`;
         const $ = s => body.querySelector(s);

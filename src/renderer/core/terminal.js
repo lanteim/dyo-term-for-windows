@@ -46,6 +46,39 @@ class TerminalPane {
         this.el.addEventListener("mousedown", () => manager.focusPane(this), true);
         this.term.onData(d => { if (this.id) window.dyo.pty.input(this.id, d); });
 
+        // Terminal copy/paste on the native keys, copying xterm's own selection
+        // (works with the WebGL renderer, where the DOM selection is empty):
+        //   macOS      — ⌘C copies the selection, ⌘V pastes
+        //   Windows/Linux — Ctrl+Shift+C / Ctrl+Shift+V  (so Ctrl+C stays SIGINT)
+        const isMac = window.__PLATFORM === "darwin";
+        this.term.attachCustomKeyEventHandler(e => {
+            if (e.type !== "keydown") return true;
+            const key = (e.key || "").toLowerCase();
+            const copyCombo = isMac ? (e.metaKey && !e.shiftKey && key === "c")
+                                    : (e.ctrlKey && e.shiftKey && key === "c");
+            const pasteCombo = isMac ? (e.metaKey && !e.shiftKey && key === "v")
+                                     : (e.ctrlKey && e.shiftKey && key === "v");
+            if (copyCombo) {
+                const sel = this.term.getSelection();
+                if (sel) {
+                    navigator.clipboard.writeText(sel).catch(() => {});
+                    return false;
+                }
+                // macOS ⌘C with no selection: swallow so it isn't sent to the pty
+                if (isMac) return false;
+            }
+            if (pasteCombo) {
+                navigator.clipboard.readText().then(t => {
+                    if (this.id && t) window.dyo.pty.input(this.id, t);
+                }).catch(() => {});
+                return false;
+            }
+            // App shortcuts (⌘… on mac, Ctrl+Shift+… on win/linux) are handled by
+            // the window keydown handler; don't let xterm also send them to the pty.
+            if (isMac ? e.metaKey : (e.ctrlKey && e.shiftKey)) return false;
+            return true;
+        });
+
         this._ro = new ResizeObserver(() => this.fit());
         this._ro.observe(this.host);
 

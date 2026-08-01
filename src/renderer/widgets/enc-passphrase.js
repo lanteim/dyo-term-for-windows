@@ -37,7 +37,7 @@ window.WIDGETS.enc_passphrase = {
             <div style="display:flex;gap:6px;align-items:center">
               <input class="_out" readonly style="flex:1;font-family:var(--font-mono);font-size:14px;background:var(--bg-elevated);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;word-break:break-all">
               <button class="_copy" style="background:transparent;color:var(--text);border:1px solid var(--accent);border-radius:6px;padding:8px 12px;cursor:pointer;font-family:var(--font-mono)">Copy</button>
-              <button class="_gen" style="background:transparent;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;cursor:pointer;font-family:var(--font-mono)">↻</button>
+              <button class="_gen" title="Regenerate" aria-label="Regenerate" style="background:transparent;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;cursor:pointer;font-family:var(--font-mono)">↻</button>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <span style="color:var(--text-dim);min-width:52px">Words</span>

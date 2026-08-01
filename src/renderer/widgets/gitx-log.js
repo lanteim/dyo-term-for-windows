@@ -51,7 +51,7 @@ window.WIDGETS.gitlog = {
                     pre.innerHTML = `<span style="color:var(--text-dim)">${esc((res && res.stderr && res.stderr.trim()) || "no commits yet")}</span>`;
                     return;
                 }
-                const lines = res.stdout.split("\n").slice(0, 200);
+                const lines = (res.stdout || "").split("\n").slice(0, 200);
                 pre.innerHTML = lines.map(colorLine).join("\n");
             } catch (e) {
                 pre.innerHTML = `<span style="color:var(--danger)">error reading git log</span>`;

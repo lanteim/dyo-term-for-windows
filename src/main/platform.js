@@ -195,10 +195,26 @@ function windowOptions(platform) {
 // than the role default Ctrl+C / Ctrl+V. Cut/undo/redo/select-all keep their
 // defaults — they do not collide with the pty.
 function menuTemplate(platform) {
+    // copy/paste use registerAccelerator:false everywhere: the shortcut is shown
+    // in the menu for discoverability, but the key event is NOT grabbed by the
+    // OS menu — it reaches the renderer, which copies xterm's own selection in a
+    // terminal (works with the WebGL renderer) and does normal copy/paste in
+    // form fields. See core/terminal.js and core/app.js.
     if (platform === "darwin") {
         return [
             {role: "appMenu"},
-            {role: "editMenu"},
+            {
+                label: "Edit",
+                submenu: [
+                    {role: "undo"},
+                    {role: "redo"},
+                    {type: "separator"},
+                    {role: "cut"},
+                    {role: "copy", accelerator: "Cmd+C", registerAccelerator: false},
+                    {role: "paste", accelerator: "Cmd+V", registerAccelerator: false},
+                    {role: "selectAll"}
+                ]
+            },
             {role: "viewMenu"},
             {role: "windowMenu"}
         ];
@@ -218,8 +234,8 @@ function menuTemplate(platform) {
                 {type: "separator"},
                 {role: "cut"},
                 // Terminal-safe clipboard: Ctrl+C stays SIGINT in the pty.
-                {role: "copy", accelerator: "CmdOrCtrl+Shift+C"},
-                {role: "paste", accelerator: "CmdOrCtrl+Shift+V"},
+                {role: "copy", accelerator: "Ctrl+Shift+C", registerAccelerator: false},
+                {role: "paste", accelerator: "Ctrl+Shift+V", registerAccelerator: false},
                 {role: "selectAll"}
             ]
         },

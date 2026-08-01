@@ -27,7 +27,7 @@ window.WIDGETS.api_dnsapi = {
               <span id="_dn_st" style="color:var(--text-dim);margin-left:auto"></span>
             </div>
             <div id="_dn_msg" style="color:var(--text-dim);font-size:11px"></div>
-            <div id="_dn_list" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;font-family:var(--font-mono);font-size:11.5px"></div>
+            <div id="_dn_list" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;font-family:var(--font-mono);font-size:11.5px"><div style="padding:10px;color:var(--text-dim)">Enter a domain and press Resolve.</div></div>
           </div>`;
         const $ = s => body.querySelector(s);
 

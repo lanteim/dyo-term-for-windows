@@ -42,7 +42,7 @@ window.WIDGETS.k8x_ingress = {
                     return;
                 }
                 $("#_ki_msg").textContent = "";
-                const lines = r.stdout.split("\n").map(l => l.trim()).filter(Boolean).slice(0, 200);
+                const lines = (r.stdout || "").split("\n").map(l => l.trim()).filter(Boolean).slice(0, 200);
                 if (!lines.length) { $("#_ki_sum").textContent = "no ingress"; $("#_ki_rows").innerHTML = ""; return; }
                 const rows = lines.map(l => {
                     const c = l.split(/\s+/);

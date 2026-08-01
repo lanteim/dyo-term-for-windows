@@ -21,7 +21,7 @@ window.WIDGETS = window.WIDGETS || {};
                     <span style="color:var(--text-dim)">🐳 DISK / PRUNE</span>
                     <span id="_dkp_msg" style="color:var(--text-dim);margin-left:auto"></span>
                   </div>
-                  <div id="_dkp_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:6px"></div>
+                  <div id="_dkp_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:6px"><div style="color:var(--text-dim)">Loading…</div></div>
                   <div style="display:flex;gap:6px">
                     <button id="_dkp_refresh" style="background:var(--bg-elevated);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 12px;cursor:pointer">Refresh</button>
                     <button id="_dkp_prune" style="background:var(--danger);color:var(--bg-elevated);border:none;border-radius:6px;padding:6px 12px;cursor:pointer;margin-left:auto">Prune -f</button>

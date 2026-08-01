@@ -52,22 +52,29 @@ window.WIDGETS.netmon = {
 
         const tick = async () => {
             if (!alive) return;
-            if (!iface) {
-                const def = await window.dyo.si("networkInterfaceDefault");
-                iface = def || "en0";
-            }
-            const stats = await window.dyo.si("networkStats", iface);
-            const s = Array.isArray(stats) ? stats[0] : stats;
-            if (s) {
-                const online = s.operstate === "up" || s.rx_sec != null;
-                $("#_nm_state").textContent = window.I18N.t(online ? "net.online" : "net.offline");
-                $("#_nm_state").style.color = online ? "var(--accent2)" : "var(--danger)";
-                $("#_nm_if").textContent = s.iface || iface;
-                $("#_nm_rx").textContent = fmtRate(s.rx_sec);
-                $("#_nm_tx").textContent = fmtRate(s.tx_sec);
-                hist.push({ rx: s.rx_sec || 0, tx: s.tx_sec || 0 });
-                if (hist.length > 60) hist.shift();
-                draw();
+            try {
+                if (!iface) {
+                    const def = await window.dyo.si("networkInterfaceDefault");
+                    iface = def || "en0";
+                }
+                const stats = await window.dyo.si("networkStats", iface);
+                if (!alive) return;
+                const s = Array.isArray(stats) ? stats[0] : stats;
+                if (s && !s.error) {
+                    const online = s.operstate === "up" || s.rx_sec != null;
+                    $("#_nm_state").textContent = window.I18N.t(online ? "net.online" : "net.offline");
+                    $("#_nm_state").style.color = online ? "var(--accent2)" : "var(--danger)";
+                    $("#_nm_if").textContent = s.iface || iface;
+                    $("#_nm_rx").textContent = fmtRate(s.rx_sec);
+                    $("#_nm_tx").textContent = fmtRate(s.tx_sec);
+                    hist.push({ rx: s.rx_sec || 0, tx: s.tx_sec || 0 });
+                    if (hist.length > 60) hist.shift();
+                    draw();
+                } else if ($("#_nm_state").textContent === "…") {
+                    $("#_nm_state").textContent = "No data";
+                }
+            } catch (e) {
+                if (alive && $("#_nm_state").textContent === "…") $("#_nm_state").textContent = "No data";
             }
         };
         tick();

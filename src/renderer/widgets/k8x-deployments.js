@@ -42,7 +42,7 @@ window.WIDGETS.k8x_deployments = {
                     return;
                 }
                 $("#_kd_msg").textContent = "";
-                const lines = r.stdout.split("\n").map(l => l.trim()).filter(Boolean).slice(0, 200);
+                const lines = (r.stdout || "").split("\n").map(l => l.trim()).filter(Boolean).slice(0, 200);
                 if (!lines.length) { $("#_kd_sum").textContent = "no deployments"; $("#_kd_rows").innerHTML = ""; return; }
                 let bad = 0;
                 const rows = lines.map(l => {

@@ -21,7 +21,7 @@ window.WIDGETS = window.WIDGETS || {};
                     <span style="color:var(--text-dim)">🐳 COLIMA</span>
                     <span id="_ctcl_sum" style="margin-left:auto"></span>
                   </div>
-                  <div id="_ctcl_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:4px"></div>
+                  <div id="_ctcl_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:4px"><div style="color:var(--text-dim);padding:10px">Loading…</div></div>
                 </div>`;
             const $ = s => body.querySelector(s);
             let alive = true, busy = false;
@@ -39,7 +39,7 @@ window.WIDGETS = window.WIDGETS || {};
                 try {
                     // colima list --json emits one JSON object per line per profile
                     const res = await window.dyo.exec("colima", ["list", "--json"], { timeout: 8000 });
-                    if (!res || (res.code !== 0 && !res.stdout.trim())) {
+                    if (!res || (res.code !== 0 && !(res.stdout || "").trim())) {
                         const msg = diagnose(res);
                         if (msg === null) {
                             $("#_ctcl_sum").innerHTML = `<span style="color:var(--danger)">stopped</span>`;
@@ -51,7 +51,7 @@ window.WIDGETS = window.WIDGETS || {};
                         return;
                     }
                     const insts = [];
-                    res.stdout.split("\n").forEach(l => {
+                    (res.stdout || "").split("\n").forEach(l => {
                         l = l.trim();
                         if (!l) return;
                         try { insts.push(JSON.parse(l)); } catch (e) { }
