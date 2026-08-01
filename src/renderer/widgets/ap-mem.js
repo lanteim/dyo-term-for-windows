@@ -29,9 +29,32 @@ window.APWidget.define({
     },
     redraw(ctx) { ctx.graph('[data-ref="g"]', "mem", { min: 0, max: 100 }); },
     async update(ctx) {
+        const b = ctx.fmt.bytes;
+        const n = Math.max(1, Number(ctx.settings.topN) || 5);
+        // Remote → read the ssh'd server's /proc/meminfo.
+        if (ctx.remote) {
+            const m = await window.APRemote.mem(ctx);
+            if (!m || !m.total) return ctx.setStatus("no memory data from " + (ctx.host && ctx.host.label), "err");
+            const pct = Math.max(0, Math.min(100, (m.used / m.total) * 100));
+            ctx.ref.pct.textContent = Math.round(pct);
+            ctx.ref.bar.style.width = pct + "%";
+            ctx.ref.abs.textContent = b(m.used) + " / " + b(m.total);
+            ctx.push("mem", pct);
+            ctx.ref.kv.innerHTML = [["Used", m.used], ["Free", m.free], ["Available", m.available], ["Buffers", m.buffers], ["Cache", m.cached]]
+                .map(([k, v]) => `<span class="k">${k}</span><span class="v"><b>${b(v || 0)}</b></span>`).join("");
+            const swPct = m.swapTotal ? Math.max(0, Math.min(100, (m.swapUsed / m.swapTotal) * 100)) : 0;
+            ctx.ref.swpct.textContent = Math.round(swPct);
+            ctx.ref.swbar.style.width = swPct + "%";
+            ctx.ref.swabs.textContent = m.swapTotal ? b(m.swapUsed) + " / " + b(m.swapTotal) : "no swap";
+            ctx.ref.swchip.className = "apw-chip " + (!m.swapTotal ? "" : swPct > 50 ? "err" : swPct > 10 ? "warn" : "ok");
+            ctx.ref.top.innerHTML = (m.procs || []).slice(0, n).map(p =>
+                `<tr><td>${ctx.fmt.esc((p.name || "").slice(0, 20))}</td><td style="color:var(--text-dim)">${p.pid}</td><td style="text-align:right"><b style="color:var(--accent)">${b(p.rss)}</b></td></tr>`).join("");
+            ctx.setStatus("● " + ctx.host.label);
+            ctx.graph('[data-ref="g"]', "mem", { min: 0, max: 100 });
+            return;
+        }
         const [mem, procs] = await Promise.all([ctx.si("mem"), ctx.si("processes")]);
         if (!mem || !mem.total) return ctx.notAvailable("Memory stats not available on this host");
-        const b = ctx.fmt.bytes;
 
         // used-percent bar + graph (used = total - free, includes buffers/cache)
         const used = mem.used != null ? mem.used : (mem.total - mem.free);
@@ -59,7 +82,6 @@ window.APWidget.define({
         ctx.ref.swchip.className = "apw-chip " + (!swTot ? "" : swPct > 50 ? "err" : swPct > 10 ? "warn" : "ok");
 
         // top processes by mem field (percent)
-        const n = Math.max(1, Number(ctx.settings.topN) || 5);
         const list = (procs.list || []).slice().sort((a, b2) => (b2.mem || 0) - (a.mem || 0)).slice(0, n);
         ctx.ref.top.innerHTML = list.map(p =>
             `<tr><td>${ctx.fmt.esc((p.name || "").slice(0, 20))}</td><td style="color:var(--text-dim)">${p.pid}</td><td style="text-align:right"><b style="color:var(--accent)">${(p.mem || 0).toFixed(1)}%</b></td></tr>`).join("");

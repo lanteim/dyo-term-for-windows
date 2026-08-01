@@ -25,6 +25,23 @@ window.APWidget.define({
     },
     redraw(ctx) { ctx.graph('[data-ref="g"]', "cpu", { min: 0, max: 100 }); },
     async update(ctx) {
+        const topN = Math.max(1, Number(ctx.settings.topN) || 5);
+        // Remote (active tab is ssh'd somewhere) → read that server's /proc.
+        if (ctx.remote) {
+            const d = await window.APRemote.cpu(ctx);
+            if (!d) return ctx.setStatus("no CPU data from " + (ctx.host && ctx.host.label), "err");
+            const total = Math.round(d.total);
+            ctx.ref.tot.textContent = total;
+            ctx.ref.totbar.style.width = total + "%";
+            ctx.ref.avg.textContent = "avg " + (d.avg || 0).toFixed(2) + " · " + d.nproc + " cores";
+            ctx.push("cpu", total);
+            ctx.ref.cores.innerHTML = d.cores.map((c, i) => { const p = Math.round(c.load); return `<div class="apw-core">C${i}<div class="bar"><i style="width:${p}%"></i></div>${p}%</div>`; }).join("");
+            ctx.ref.top.innerHTML = (d.procs || []).slice(0, topN).map(p =>
+                `<tr><td>${ctx.fmt.esc((p.name || "").slice(0, 20))}</td><td style="color:var(--text-dim)">${p.pid}</td><td style="text-align:right"><b style="color:var(--accent)">${(p.cpu || 0).toFixed(1)}%</b></td></tr>`).join("");
+            ctx.setStatus("● " + ctx.host.label);
+            ctx.graph('[data-ref="g"]', "cpu", { min: 0, max: 100 });
+            return;
+        }
         const [load, procs] = await Promise.all([ctx.si("currentLoad"), ctx.si("processes")]);
         const total = Math.round(load.currentLoad || 0);
         ctx.ref.tot.textContent = total;

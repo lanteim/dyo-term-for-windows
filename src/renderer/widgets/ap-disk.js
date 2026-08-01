@@ -39,6 +39,34 @@ window.APWidget.define({
     redraw(ctx) { ctx.graph('[data-ref="g"]', "io", { min: 0 }); },
     async update(ctx) {
         const fmt = ctx.fmt;
+        // Remote → read the ssh'd server's df + /proc/diskstats.
+        if (ctx.remote) {
+            const d = await window.APRemote.disk(ctx);
+            if (!d) return ctx.setStatus("no disk data from " + (ctx.host && ctx.host.label), "err");
+            ctx.ref.rb.textContent = fmt.bps(d.readSec);
+            ctx.ref.wb.textContent = fmt.bps(d.writeSec);
+            ctx.ref.ri.textContent = "—"; ctx.ref.wi.textContent = "—";
+            ctx.ref.tot.textContent = Math.round(d.iops);
+            ctx.ref.rw.textContent = `R ${fmt.bps(d.readSec)} · W ${fmt.bps(d.writeSec)}`;
+            ctx.ref.lat.textContent = "n/a";
+            ctx.push("io", d.iops);
+            ctx.graph('[data-ref="g"]', "io", { min: 0 });
+            const list = (d.fs || []).filter(v => v.size > 0)
+                .sort((a, b) => { const am = a.mount === "/" ? 1 : 0, bm = b.mount === "/" ? 1 : 0; return am !== bm ? bm - am : b.size - a.size; })
+                .slice(0, Math.max(1, Number(ctx.settings.maxFs) || 8));
+            ctx.ref.fs.innerHTML = list.map(v => {
+                const pct = Math.round(v.usePct || 0);
+                const col = pct >= 90 ? "var(--danger)" : pct >= 75 ? "var(--accent2)" : "var(--accent)";
+                const inoTxt = v.inodePct != null ? v.inodePct + "% i" : "—";
+                return `<tr><td title="${fmt.esc(v.mount)}" style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fmt.esc(v.mount)}</td>`
+                    + `<td style="width:30%"><div class="bar"><i style="width:${pct}%;background:${col}"></i></div></td>`
+                    + `<td style="text-align:right;color:var(--text-dim)">${fmt.bytes(v.used)}/${fmt.bytes(v.size)}</td>`
+                    + `<td style="text-align:right"><b style="color:var(--accent)">${fmt.bytes(Math.max(0, v.size - v.used))}</b> free</td>`
+                    + `<td style="text-align:right;color:var(--text-dim)">${inoTxt}</td></tr>`;
+            }).join("");
+            ctx.setStatus("● " + ctx.host.label);
+            return;
+        }
         const [fsSize, fsStats, io] = await Promise.all([
             ctx.si("fsSize").catch(() => null),
             ctx.si("fsStats").catch(() => null),

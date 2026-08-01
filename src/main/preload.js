@@ -26,6 +26,8 @@ contextBridge.exposeInMainWorld("dyo", {
         onExit: (id, cb) => { listeners.exit.set(id, cb); },
         off: (id) => { listeners.data.delete(id); listeners.exit.delete(id); }
     },
+    sshTarget: (id) => ipcRenderer.invoke("pty:sshTarget", id),
+    ssh: (sshArgs, command, opts) => ipcRenderer.invoke("ssh:exec", sshArgs, command, opts),
     si: (type, ...args) => ipcRenderer.invoke("si", type, ...args),
     settings: {
         get: () => ipcRenderer.invoke("settings:get"),
@@ -52,6 +54,10 @@ contextBridge.exposeInMainWorld("dyo", {
         list: (dir) => ipcRenderer.invoke("fs:list", dir),
         read: (p, maxBytes) => ipcRenderer.invoke("fs:read", p, maxBytes),
         stat: (p) => ipcRenderer.invoke("fs:stat", p)
+    },
+    media: {
+        scan: (dir) => ipcRenderer.invoke("media:scan", dir),
+        pickDir: () => ipcRenderer.invoke("dialog:openDir")
     },
     db: {
         connect: (cfg) => ipcRenderer.invoke("db:connect", cfg),

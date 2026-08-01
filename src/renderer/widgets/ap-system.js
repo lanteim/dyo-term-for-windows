@@ -29,6 +29,24 @@ window.APWidget.define({
             </div>`;
     },
     async update(ctx) {
+        // Remote → read the ssh'd server's /proc + uname + os-release.
+        if (ctx.remote) {
+            const d = await window.APRemote.system(ctx);
+            if (!d) return ctx.setStatus("no system data from " + (ctx.host && ctx.host.label), "err");
+            const g = v => ctx.fmt.esc(v || "n/a");
+            ctx.ref.uptime.textContent = d.uptime ? ctx.fmt.duration(d.uptime) : "n/a";
+            ctx.ref.load.textContent = d.load.map(x => x.toFixed(2)).join("  ");
+            ctx.ref.procs.textContent = d.procs ? ctx.fmt.num(d.procs) : "n/a";
+            ctx.ref.users.textContent = d.users != null ? String(d.users) : "0";
+            ctx.ref.host.textContent = g(d.hostname);
+            ctx.ref.distro.textContent = g(d.os);
+            ctx.ref.release.textContent = g(d.os);
+            ctx.ref.kernel.textContent = g(d.kernel);
+            ctx.ref.platform.textContent = "linux";
+            ctx.ref.arch.textContent = g(d.arch);
+            ctx.setStatus("● " + ctx.host.label);
+            return;
+        }
         // Fetch every source independently so one missing metric never blanks the rest.
         const [time, load, procs, users, os] = await Promise.all([
             ctx.si("time").catch(() => null),

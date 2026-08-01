@@ -11,6 +11,7 @@ const fs = require("fs");
 const os = require("os");
 const {execFile} = require("child_process");
 const pty = require("node-pty");
+const sshdetect = require("./sshdetect.js");
 const si = require("systeminformation");
 const platform = require("./platform");
 const {windowOptions, menuTemplate} = platform;
@@ -222,6 +223,33 @@ function registerIpc() {
         return platform.cwdOf(t.proc.pid);
     });
 
+    // Detect the ssh session a pane is connected to, so A.Petrov widgets can
+    // read metrics from THAT server (per active tab). macOS/Linux only.
+    ipcMain.handle("pty:sshTarget", (e, id) => {
+        if (process.platform === "win32") return null;
+        const t = ptys.get(id);
+        if (!t) return null;
+        try { return sshdetect.detectSshUnderPid(t.proc.pid); } catch (err) { return null; }
+    });
+
+    // Run a single command on a remote host over ssh, reusing the pane's own
+    // connection args. BatchMode so it never blocks on a password prompt; it
+    // relies on the user's keys/agent/ssh config. argv array → no shell inject.
+    ipcMain.handle("ssh:exec", async (e, sshArgs, command, opts = {}) => {
+        const env = loginEnvPromise ? await loginEnvPromise : process.env;
+        const base = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-o", "StrictHostKeyChecking=accept-new"];
+        const args = [...base, ...(Array.isArray(sshArgs) ? sshArgs : []), String(command || "")];
+        return new Promise(resolve => {
+            execFile("ssh", args, { env, timeout: opts.timeout || 10000, maxBuffer: 8 * 1024 * 1024 }, (err, stdout, stderr) => {
+                resolve({
+                    code: err ? (typeof err.code === "number" ? err.code : 1) : 0,
+                    stdout: String(stdout || ""),
+                    stderr: String(stderr || (err && err.message) || "")
+                });
+            });
+        });
+    });
+
     // systeminformation, allowlisted by property lookup
     ipcMain.handle("si", async (e, type, ...args) => {
         if (typeof si[type] !== "function") return null;
@@ -323,6 +351,36 @@ function registerIpc() {
     ipcMain.handle("fs:stat", (e, p) => {
         try { const s = fs.statSync(p); return { size: s.size, dir: s.isDirectory(), mtimeMs: s.mtimeMs }; }
         catch (err) { return { error: err.message }; }
+    });
+
+    // Recursively find audio files under a folder (bounded), for the local player.
+    ipcMain.handle("media:scan", (e, dir) => {
+        const EXT = new Set([".mp3", ".flac", ".m4a", ".aac", ".ogg", ".oga", ".opus", ".wav", ".webm", ".wma", ".aiff", ".aif"]);
+        const out = [];
+        const walk = (d, depth) => {
+            if (depth > 6 || out.length >= 5000) return;
+            let entries;
+            try { entries = fs.readdirSync(d, { withFileTypes: true }); } catch (err) { return; }
+            for (const ent of entries) {
+                if (out.length >= 5000) break;
+                if (ent.name.startsWith(".")) continue;
+                const full = path.join(d, ent.name);
+                if (ent.isDirectory()) walk(full, depth + 1);
+                else if (EXT.has(path.extname(ent.name).toLowerCase())) out.push({ path: full, name: ent.name });
+            }
+        };
+        try { if (!dir || !fs.statSync(dir).isDirectory()) return { error: "not a directory" }; }
+        catch (err) { return { error: err.message }; }
+        walk(dir, 0);
+        out.sort((a, b) => a.path.localeCompare(b.path));
+        return { files: out };
+    });
+
+    // Native folder picker for the local player.
+    ipcMain.handle("dialog:openDir", async () => {
+        const { dialog } = require("electron");
+        const r = await dialog.showOpenDialog(win, { properties: ["openDirectory"] });
+        return (r.canceled || !r.filePaths.length) ? null : r.filePaths[0];
     });
 
     // Outbound HTTP for widgets (Prometheus, AI endpoints, etc.), routed through

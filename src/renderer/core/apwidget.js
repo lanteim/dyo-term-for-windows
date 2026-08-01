@@ -27,6 +27,10 @@
     ];
     const HIST_CAP_MS = 60 * 60 * 1000; // keep at most one hour of history
 
+    // POSIX-quote args when relaying a local command over ssh to a remote host
+    function shq(s) { return "'" + String(s == null ? "" : s).replace(/'/g, "'\\''") + "'"; }
+    function shJoin(arr) { return arr.map(shq).join(" "); }
+
     // ---- formatting helpers, shared with widgets via ctx.fmt / APWidget.fmt ----
     const fmt = {
         bytes(n, digits = 1) {
@@ -163,14 +167,29 @@
                 + `<span style="flex:1"></span><button class="apw-export" title="Export CSV">CSV</button>`;
             body.appendChild(rangeBar);
         }
+        // host badge — which server this widget is currently reading (follows the tab)
+        const hostBadge = document.createElement("div");
+        hostBadge.className = "apw-host";
+        const renderHost = () => { const h = window.__monitorHost; hostBadge.textContent = h ? ("⇅ " + h.label) : ""; hostBadge.style.display = h ? "block" : "none"; };
+        body.appendChild(hostBadge);
         body.appendChild(content);
         body.appendChild(status);
+        renderHost();
 
         // ── ctx handed to the widget ──
         const ctx = {
             id, body: content, root: body,
             si: (...a) => window.dyo.si(...a),
-            exec: (...a) => window.dyo.exec(...a),
+            get host() { return window.__monitorHost || null; },
+            get remote() { return !!window.__monitorHost; },
+            exec(cmd, args = [], opts = {}) {
+                const h = window.__monitorHost;
+                return h ? window.dyo.ssh(h.sshArgs, shJoin([cmd, ...(args || [])]), opts) : window.dyo.exec(cmd, args, opts);
+            },
+            sh(script, opts = {}) {
+                const h = window.__monitorHost;
+                return h ? window.dyo.ssh(h.sshArgs, String(script), opts) : window.dyo.exec("/bin/sh", ["-c", String(script)], opts);
+            },
             db: window.dyo.db, http: (...a) => window.dyo.http(...a), fsapi: window.dyo.fs,
             settings: st.settings, fmt,
             t: window.I18N.t.bind(window.I18N),
@@ -306,11 +325,16 @@
             return `<div class="apw-field">${lab}<input type="${f.type === "number" ? "number" : "text"}" name="${f.key}" value="${fmt.esc(val == null ? "" : val)}" placeholder="${fmt.esc(f.placeholder || "")}"></div>`;
         }
 
+        // when the active tab's ssh host changes, drop history (different server)
+        // and re-read immediately so metrics track the tab.
+        const onHostChange = () => { st.hist = {}; renderHost(); runUpdate(true); };
+        window.addEventListener("dyo-host-change", onHostChange);
+
         runUpdate(true);
         let iv = setInterval(() => runUpdate(false), interval);
 
         return {
-            destroy() { st.alive = false; clearInterval(iv); if (io) io.disconnect(); },
+            destroy() { st.alive = false; clearInterval(iv); if (io) io.disconnect(); window.removeEventListener("dyo-host-change", onHostChange); },
             refresh: () => runUpdate(true),
         };
     }

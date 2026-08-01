@@ -35,6 +35,26 @@ window.APWidget.define({
     },
     redraw(ctx) { drawBoth(ctx); },
     async update(ctx) {
+        // Remote → read the ssh'd server's /proc/net.
+        if (ctx.remote) {
+            const d = await window.APRemote.net(ctx);
+            if (!d) return ctx.setStatus("no network data from " + (ctx.host && ctx.host.label), "err");
+            ctx.ref.iface.textContent = d.iface || "—";
+            ctx.ref.state.textContent = "up"; ctx.ref.state.className = "apw-chip ok";
+            ctx.ref.rx.textContent = ctx.fmt.bps(d.rxSec);
+            ctx.ref.tx.textContent = ctx.fmt.bps(d.txSec);
+            ctx.ref.rxtot.textContent = ctx.fmt.bytes(d.rxBytes);
+            ctx.ref.txtot.textContent = ctx.fmt.bytes(d.txBytes);
+            ctx.ref.errs.textContent = `${ctx.fmt.num(d.rxErr)} rx / ${ctx.fmt.num(d.txErr)} tx`;
+            ctx.ref.errs.className = "apw-chip " + (d.rxErr + d.txErr > 0 ? "err" : "ok");
+            ctx.ref.conns.textContent = ctx.fmt.num(d.conns);
+            ctx.push("rx", d.rxSec); ctx.push("tx", d.txSec);
+            ctx.ref.ifaces.innerHTML = (d.ifaces || []).slice(0, 12).map(x =>
+                `<tr><td><b style="color:var(--accent)">${ctx.fmt.esc(x.iface)}</b></td><td style="color:var(--text-dim)">${ctx.fmt.bytes(x.rxBytes)} / ${ctx.fmt.bytes(x.txBytes)}</td><td style="text-align:right"><span class="apw-chip ${(x.rxErr + x.txErr) > 0 ? "err" : "ok"}">${ctx.fmt.num(x.rxErr + x.txErr)} err</span></td></tr>`).join("");
+            ctx.setStatus("● " + ctx.host.label);
+            drawBoth(ctx);
+            return;
+        }
         const [statsRaw, ifacesRaw, connsRaw, def] = await Promise.all([
             ctx.si("networkStats"),
             ctx.si("networkInterfaces"),

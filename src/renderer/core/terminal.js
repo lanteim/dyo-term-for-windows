@@ -286,6 +286,7 @@ class TerminalManager {
         this.renderTabs();
         const tab = this.tabs[i];
         if (tab.focused) { tab._fitAll(tab.root); setTimeout(() => tab.focused.focus(), 10); }
+        if (window.refreshMonitorHost) window.refreshMonitorHost(); // metrics follow the tab
     }
 
     closeTab(i) {
@@ -305,6 +306,7 @@ class TerminalManager {
         if (!tab) return;
         tab.focused = pane;
         tab.panes().forEach(p => p.el.classList.toggle("focused", p === pane));
+        if (window.refreshMonitorHost) window.refreshMonitorHost(); // metrics follow the focused pane
     }
 
     onPaneExit(pane) {

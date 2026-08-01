@@ -68,6 +68,28 @@
     window.__setDock = (pos) => applyDock(pos, true); // used when switching layouts
     window.__dashDock = () => dashDock;
 
+    // ── A.Petrov metrics follow the active tab's ssh session ──
+    // The focused pane is inspected for an ssh child; its connection is reused so
+    // widgets read metrics from that server. Switching tab/pane re-detects.
+    window.__monitorHost = null;
+    let _hostKey = "__init";
+    async function refreshMonitorHost() {
+        let host = null;
+        try {
+            const tab = term.activeTab && term.activeTab();
+            const pane = tab && tab.focused;
+            if (pane && pane.id) host = await window.dyo.sshTarget(pane.id);
+        } catch (e) { /* ignore transient detection errors */ }
+        const key = host ? JSON.stringify(host) : "";
+        if (key === _hostKey) return;
+        _hostKey = key;
+        window.__monitorHost = host ? { sshArgs: [...host.args, host.dest], label: host.label, dest: host.dest } : null;
+        window.dispatchEvent(new CustomEvent("dyo-host-change", { detail: window.__monitorHost }));
+    }
+    window.refreshMonitorHost = refreshMonitorHost;
+    setInterval(refreshMonitorHost, 2000);
+    refreshMonitorHost();
+
     // ---- layout profiles menu ----
     let layoutMenu = null;
     function openLayoutMenu(anchor) {
