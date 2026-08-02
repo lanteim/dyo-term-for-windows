@@ -6,7 +6,7 @@
 const { execFileSync } = require("child_process");
 
 // ssh options that consume a following argument
-const TAKES_ARG = new Set(["-b", "-c", "-D", "-E", "-e", "-F", "-I", "-i", "-J", "-L", "-l", "-m", "-O", "-o", "-p", "-Q", "-R", "-S", "-W", "-w"]);
+const TAKES_ARG = new Set(["-B", "-b", "-c", "-D", "-E", "-e", "-F", "-I", "-i", "-J", "-L", "-l", "-m", "-O", "-o", "-P", "-p", "-Q", "-R", "-S", "-W", "-w"]);
 // connection options safe to reuse for a background, non-interactive command
 const KEEP = new Set(["-p", "-i", "-l", "-o", "-F", "-J", "-c", "-C", "-4", "-6"]);
 const KEEP_ARG = new Set(["-p", "-i", "-l", "-o", "-F", "-J", "-c"]);
@@ -25,10 +25,12 @@ function parseSshCommand(cmd) {
         const t = toks[i];
         if (t.startsWith("-")) {
             const flag = t.slice(0, 2);
+            if (flag === "-W" || flag === "-O") return null; // stdio proxy / mux control → not an interactive session
             conn.push(t);
             if (TAKES_ARG.has(flag) && t.length === 2 && toks[i + 1] != null) conn.push(toks[++i]);
         } else {
             dest = t; // first bare operand is the destination
+            if (i + 1 < toks.length) return null; // tokens after dest = remote command → non-interactive (git/rsync/scp)
         }
     }
     if (!dest) return null;
@@ -49,7 +51,8 @@ function parseSshCommand(cmd) {
     return { args, dest, label };
 }
 
-// Find the ssh session under a pty's process tree (deepest wins → foreground).
+// Find the ssh session under a pty's process tree (shallowest wins → the
+// user's session, not proxy/mux children spawned under it).
 function detectSshUnderPid(rootPid) {
     if (!rootPid) return null;
     let out;
@@ -71,7 +74,7 @@ function detectSshUnderPid(rootPid) {
         seen.add(p);
         for (const c of (kids.get(p) || [])) {
             const parsed = parseSshCommand(cmd.get(c));
-            if (parsed) found = parsed; // keep the deepest match
+            if (parsed) { if (!found) found = parsed; continue; } // keep the shallowest match; do not descend into its children
             q.push(c);
         }
     }

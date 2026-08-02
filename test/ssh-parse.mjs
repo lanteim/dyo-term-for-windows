@@ -21,7 +21,7 @@ console.log("== parseSshCommand ==");
 eq("plain user@host", parseSshCommand("ssh deploy@10.0.0.5"), { args: [], dest: "deploy@10.0.0.5", label: "10.0.0.5" });
 eq("alias", parseSshCommand("ssh prod-web"), { args: [], dest: "prod-web", label: "prod-web" });
 eq("with -p and -i", parseSshCommand("ssh -p 2222 -i ~/.ssh/id_ed25519 root@server"), { args: ["-p", "2222", "-i", "~/.ssh/id_ed25519"], dest: "root@server", label: "server" });
-eq("drops -t and remote cmd", parseSshCommand("ssh -t user@box htop"), { args: [], dest: "user@box", label: "box" });
+ok("rejects ssh carrying a remote command (non-interactive: git/rsync/htop)", parseSshCommand("ssh -t user@box htop") === null);
 eq("keeps -o, drops -L", parseSshCommand("ssh -o StrictHostKeyChecking=no -L 8080:localhost:80 h"), { args: ["-o", "StrictHostKeyChecking=no"], dest: "h", label: "h" });
 eq("full path ssh", parseSshCommand("/usr/bin/ssh box"), { args: [], dest: "box", label: "box" });
 ok("not ssh -> null", parseSshCommand("sshd -D") === null);
@@ -108,7 +108,7 @@ await new Promise(r => setTimeout(r, 20)); // real code samples ~2s apart; give 
 const n2 = await AR.net(nctx);
 ok("net first rate 0", n1.rxSec === 0);
 ok("net rx rate > 0", n2.rxSec > 0 && n2.txSec > 0, `rx=${Math.round(n2.rxSec)} tx=${Math.round(n2.txSec)}`);
-ok("net conns = 10", n2.conns === 10);
+ok("net conns = 12 (no header subtraction; grep-filtered)", n2.conns === 12);
 
 console.log(`\n${fail === 0 ? "ALL PASS" : "FAILED"} — ${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

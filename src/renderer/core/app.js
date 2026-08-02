@@ -44,7 +44,7 @@
     mkBtn("search", "btn.search", () => toggleSearch());
     const editBtn = mkBtn("edit", "btn.edit", () => toggleEdit(), "edit-btn");
     mkBtn("palette", "btn.themes", () => openThemes());
-    mkBtn("lang", "btn.lang", (e) => openLangMenu(e.currentTarget));
+    mkBtn("lang", "btn.lang", (e) => openLangMenu(e.currentTarget), "lang-btn");
     const dashBtn = mkBtn("grid", "btn.dash", () => toggleDash(), "dash-btn");
     const dockBtn = mkBtn("dock", "btn.dock", () => cycleDock(), "dock-btn");
     mkBtn("layers", "btn.layouts", (e) => openLayoutMenu(e.currentTarget), "layouts-btn");
@@ -93,7 +93,7 @@
     // ---- layout profiles menu ----
     let layoutMenu = null;
     function openLayoutMenu(anchor) {
-        if (layoutMenu) { layoutMenu.remove(); layoutMenu = null; return; }
+        if (layoutMenu) { layoutMenu.remove(); layoutMenu = null; document.removeEventListener("mousedown", closeLayoutOnce); return; }
         const dash = window.dash;
         layoutMenu = document.createElement("div");
         layoutMenu.className = "popmenu";
@@ -171,7 +171,7 @@
     // Language menu (default English)
     let langMenu = null;
     function openLangMenu(anchor) {
-        if (langMenu) { langMenu.remove(); langMenu = null; return; }
+        if (langMenu) { langMenu.remove(); langMenu = null; document.removeEventListener("mousedown", closeLangOnce); return; }
         langMenu = document.createElement("div");
         langMenu.style.cssText = "position:absolute;top:44px;right:52px;z-index:30;min-width:150px;padding:6px;border:1px solid var(--border-strong);border-radius:10px;background:var(--bg-elevated);display:flex;flex-direction:column;gap:2px";
         window.I18N.languages.forEach(l => {
@@ -180,14 +180,17 @@
             item.style.cssText = "padding:8px 10px;border-radius:7px;cursor:pointer;font-size:12px;color:" + (l.code === window.I18N.lang ? "var(--accent)" : "var(--text)");
             item.onmouseenter = () => item.style.background = "var(--bg-panel)";
             item.onmouseleave = () => item.style.background = "transparent";
-            item.onclick = () => { setLang(l.code); langMenu.remove(); langMenu = null; };
+            item.onclick = () => { setLang(l.code); langMenu.remove(); langMenu = null; document.removeEventListener("mousedown", closeLangOnce); };
             langMenu.appendChild(item);
         });
         document.getElementById("app").appendChild(langMenu);
-        setTimeout(() => document.addEventListener("mousedown", closeLangOnce, { once: true }), 0);
+        setTimeout(() => document.addEventListener("mousedown", closeLangOnce), 0);
     }
     function closeLangOnce(e) {
-        if (langMenu && !langMenu.contains(e.target)) { langMenu.remove(); langMenu = null; }
+        if (langMenu && !langMenu.contains(e.target) && !e.target.closest("#lang-btn")) {
+            langMenu.remove(); langMenu = null;
+            document.removeEventListener("mousedown", closeLangOnce);
+        }
     }
     function setLang(code) {
         window.I18N.set(code);
@@ -257,7 +260,7 @@
     const isMac = window.__PLATFORM === "darwin";
     window.addEventListener("keydown", e => {
         if (!isMac && e.key === "F11") { e.preventDefault(); window.dyo.win("toggleFullscreen"); return; }
-        const primary = isMac ? e.metaKey : (e.ctrlKey && e.shiftKey);
+        const primary = isMac ? e.metaKey : (e.ctrlKey && e.shiftKey && !e.altKey); // !altKey: AltGr reports ctrl+alt on Windows
         if (!primary) return;
         const k = (e.key || "").toLowerCase();
         const digit = /^Digit([1-9])$/.exec(e.code || "");
@@ -277,24 +280,33 @@
     // here for inputs/textareas; skips the terminal panes, which handle their own.
     document.addEventListener("keydown", async e => {
         const k = (e.key || "").toLowerCase();
-        const copy = isMac ? (e.metaKey && !e.shiftKey && k === "c") : (e.ctrlKey && e.shiftKey && k === "c");
-        const paste = isMac ? (e.metaKey && !e.shiftKey && k === "v") : (e.ctrlKey && e.shiftKey && k === "v");
+        const copy = isMac ? (e.metaKey && !e.shiftKey && k === "c") : (e.ctrlKey && e.shiftKey && !e.altKey && k === "c");
+        const paste = isMac ? (e.metaKey && !e.shiftKey && k === "v") : (e.ctrlKey && e.shiftKey && !e.altKey && k === "v");
         if (!copy && !paste) return;
         const ae = document.activeElement;
         if (!ae || (ae.closest && ae.closest(".pane"))) return; // terminal handles itself
         const isField = ae.tagName === "INPUT" || ae.tagName === "TEXTAREA";
         if (!isField && !ae.isContentEditable) return;
+        // selectionStart/End throw on input types without selection support (number/date/email…)
+        const selRange = (el) => { try { return [el.selectionStart, el.selectionEnd]; } catch (_) { return null; } };
         if (copy) {
-            let text = isField ? ae.value.substring(ae.selectionStart, ae.selectionEnd) : String(window.getSelection());
+            const r = isField ? selRange(ae) : null;
+            let text = isField ? (r ? ae.value.substring(r[0], r[1]) : ae.value) : String(window.getSelection());
             if (text) { e.preventDefault(); navigator.clipboard.writeText(text).catch(() => {}); }
-        } else if (paste && isField) {
+        } else if (paste) {
             e.preventDefault();
             const t = await navigator.clipboard.readText().catch(() => "");
-            if (t) {
-                const s = ae.selectionStart, en = ae.selectionEnd;
-                ae.value = ae.value.slice(0, s) + t + ae.value.slice(en);
-                ae.selectionStart = ae.selectionEnd = s + t.length;
+            if (t && isField) {
+                const r = selRange(ae);
+                if (r) {
+                    ae.value = ae.value.slice(0, r[0]) + t + ae.value.slice(r[1]);
+                    ae.selectionStart = ae.selectionEnd = r[0] + t.length;
+                } else {
+                    ae.value = t; // no selection API — replace the whole value
+                }
                 ae.dispatchEvent(new Event("input", { bubbles: true }));
+            } else if (t) {
+                document.execCommand("insertText", false, t); // contentEditable
             }
         }
     }, true);

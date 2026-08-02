@@ -44,7 +44,7 @@ window.APWidget.define({
             ctx.ref.kernel.textContent = g(d.kernel);
             ctx.ref.platform.textContent = "linux";
             ctx.ref.arch.textContent = g(d.arch);
-            ctx.setStatus("● " + ctx.host.label);
+            ctx.setStatus("● " + (ctx.host && ctx.host.label ? ctx.host.label : ""));
             return;
         }
         // Fetch every source independently so one missing metric never blanks the rest.

@@ -64,7 +64,10 @@ function loadSettings() {
 function saveSettings(patch) {
     const merged = Object.assign(loadSettings(), patch);
     fs.mkdirSync(USER_DIR, {recursive: true});
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(merged, null, 2));
+    // Write atomically (tmp + rename) so a crash mid-write can't truncate settings.
+    const tmp = SETTINGS_FILE + ".tmp";
+    fs.writeFileSync(tmp, JSON.stringify(merged, null, 2));
+    fs.renameSync(tmp, SETTINGS_FILE);
     return merged;
 }
 
@@ -153,6 +156,11 @@ function createWindow(settings) {
     win.webContents.on("will-navigate", (e, url) => {
         if (url !== win.webContents.getURL()) e.preventDefault();
     });
+    // A reload/navigation restarts the renderer with an empty pty map; the old
+    // ids can never be re-adopted, so kill the shells instead of leaking them.
+    win.webContents.on("did-start-navigation", e => {
+        if (e.isMainFrame && !e.isSameDocument) killAllPtys();
+    });
 }
 
 function openExternalSafe(url) {
@@ -178,8 +186,10 @@ function registerIpc() {
         const env = await loginEnvPromise;
 
         const id = "pty" + (++ptySeq);
-        const cwd = (opts.cwd && fs.existsSync(opts.cwd)) ? opts.cwd
-            : (fs.existsSync(settings.cwd) ? settings.cwd : os.homedir());
+        // Must be a real directory — a plain file makes pty.spawn throw ENOTDIR.
+        const isDir = p => { try { return fs.statSync(p).isDirectory(); } catch (err) { return false; } };
+        const cwd = (opts.cwd && isDir(opts.cwd)) ? opts.cwd
+            : (isDir(settings.cwd) ? settings.cwd : os.homedir());
         const args = Array.isArray(settings.shellArgs) ? settings.shellArgs
             : (typeof settings.shellArgs === "string" && settings.shellArgs.trim() ? settings.shellArgs.trim().split(/\s+/) : platform.defaultShellArgs(settings.shell));
 
@@ -256,9 +266,10 @@ function registerIpc() {
         });
     });
 
-    // systeminformation, allowlisted by property lookup
+    // systeminformation, allowlisted by property lookup (own properties only,
+    // so inherited Object.prototype functions can't be invoked)
     ipcMain.handle("si", async (e, type, ...args) => {
-        if (typeof si[type] !== "function") return null;
+        if (!Object.prototype.hasOwnProperty.call(si, type) || typeof si[type] !== "function") return null;
         try { return await si[type](...args); } catch (err) { return null; }
     });
 
@@ -299,7 +310,7 @@ function registerIpc() {
             }
             case "isFullscreen": return win.isFullScreen() || win.isSimpleFullScreen();
             case "close": win.close(); return null;
-            case "reload": win.webContents.reloadIgnoringCache(); return null;
+            case "reload": killAllPtys(); win.webContents.reloadIgnoringCache(); return null;
             case "toggleDevTools": win.webContents.toggleDevTools(); return null;
             default: return null;
         }
@@ -360,24 +371,25 @@ function registerIpc() {
     });
 
     // Recursively find audio files under a folder (bounded), for the local player.
-    ipcMain.handle("media:scan", (e, dir) => {
+    // Async fs so the deep walk never blocks the main event loop (pty data, IPC).
+    ipcMain.handle("media:scan", async (e, dir) => {
         const EXT = new Set([".mp3", ".flac", ".m4a", ".aac", ".ogg", ".oga", ".opus", ".wav", ".webm", ".wma", ".aiff", ".aif"]);
         const out = [];
-        const walk = (d, depth) => {
+        const walk = async (d, depth) => {
             if (depth > 6 || out.length >= 5000) return;
             let entries;
-            try { entries = fs.readdirSync(d, { withFileTypes: true }); } catch (err) { return; }
+            try { entries = await fs.promises.readdir(d, { withFileTypes: true }); } catch (err) { return; }
             for (const ent of entries) {
                 if (out.length >= 5000) break;
                 if (ent.name.startsWith(".")) continue;
                 const full = path.join(d, ent.name);
-                if (ent.isDirectory()) walk(full, depth + 1);
+                if (ent.isDirectory()) await walk(full, depth + 1);
                 else if (EXT.has(path.extname(ent.name).toLowerCase())) out.push({ path: full, name: ent.name });
             }
         };
-        try { if (!dir || !fs.statSync(dir).isDirectory()) return { error: "not a directory" }; }
+        try { if (!dir || !(await fs.promises.stat(dir)).isDirectory()) return { error: "not a directory" }; }
         catch (err) { return { error: err.message }; }
-        walk(dir, 0);
+        await walk(dir, 0);
         out.sort((a, b) => a.path.localeCompare(b.path));
         return { files: out };
     });
@@ -393,6 +405,8 @@ function registerIpc() {
     // main so the renderer CSP stays locked to 'self'.
     ipcMain.handle("http", async (e, url, opts = {}) => {
         try {
+            const proto = new URL(String(url)).protocol;
+            if (proto !== "http:" && proto !== "https:") return { error: "unsupported protocol" };
             const controller = new AbortController();
             const to = setTimeout(() => controller.abort(), opts.timeout || 12000);
             const r = await fetch(url, {
@@ -402,7 +416,24 @@ function registerIpc() {
                 signal: controller.signal
             });
             clearTimeout(to);
-            const text = await r.text();
+            // Cap the body size (matches the 8MB maxBuffer of exec/ssh:exec).
+            const MAX_BODY = 8 * 1024 * 1024;
+            const len = Number(r.headers.get("content-length") || 0);
+            if (len > MAX_BODY) { controller.abort(); return { error: "response too large" }; }
+            let text = "";
+            if (r.body) {
+                const reader = r.body.getReader();
+                const chunks = [];
+                let total = 0;
+                for (;;) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    total += value.byteLength;
+                    if (total > MAX_BODY) { controller.abort(); return { error: "response too large" }; }
+                    chunks.push(value);
+                }
+                text = Buffer.concat(chunks).toString("utf-8");
+            }
             return { status: r.status, ok: r.ok, text };
         } catch (err) { return { error: err.message }; }
     });
@@ -477,6 +508,14 @@ function runMusic(action) {
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.exit(0);
+app.on("second-instance", () => {
+    // Route a relaunch to the already-running window (except in background
+    // mode, where the window is intentionally never brought forward).
+    if (backgroundMode || !win || win.isDestroyed()) return;
+    if (win.isMinimized()) win.restore();
+    win.show();
+    win.focus();
+});
 
 app.whenReady().then(() => {
     fs.mkdirSync(USER_DIR, {recursive: true});

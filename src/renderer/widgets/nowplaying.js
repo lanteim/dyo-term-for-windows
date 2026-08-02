@@ -30,7 +30,7 @@ window.WIDGETS.nowplaying = {
         const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m]));
         const fmt = s => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
         const num = s => parseFloat(String(s == null ? "" : s).replace(",", ".")); // tolerate comma decimals
-        let alive = true, dragging = false, seeking = false;
+        let alive = true, dragging = false, seeking = false, ticking = false;
         let curDur = 0, curShuffle = false, curRepeat = "off", curFav = false;
         const REPEAT_CYCLE = { off: "all", all: "one", one: "off" };
 
@@ -100,6 +100,10 @@ window.WIDGETS.nowplaying = {
         const vol = $("#_np_vol");
         vol.addEventListener("input", () => { dragging = true; });
         vol.addEventListener("change", async () => { await window.dyo.music.control({ volume: Number(vol.value) }); setTimeout(() => { dragging = false; }, 600); });
+        // `change` doesn't fire when the thumb is released at its committed value — clear the flag on release too
+        const endVolDrag = () => { setTimeout(() => { dragging = false; }, 600); };
+        vol.addEventListener("pointerup", endVolDrag);
+        vol.addEventListener("pointercancel", endVolDrag);
 
         const showEmpty = (titleKey, hintKey, withOpen) => {
             nowEl.style.display = "none";
@@ -114,8 +118,14 @@ window.WIDGETS.nowplaying = {
             }
         };
 
+        // One state query at a time — the 1.5s interval is shorter than osascript's
+        // timeout, so unguarded ticks overlap and can resolve out of order.
         const tick = async () => {
-            if (!alive) return;
+            if (!alive || ticking) return;
+            ticking = true;
+            try { await tickInner(); } finally { ticking = false; }
+        };
+        const tickInner = async () => {
             const out = await window.dyo.music.state();
 
             if (out === null) { showEmpty("np.denied", "np.deniedhint", false); return; }
@@ -128,6 +138,13 @@ window.WIDGETS.nowplaying = {
             if (out === "notrunning" || out === "") { showEmpty("np.notrunning", "np.hint", true); return; }
 
             const p = out.split("\t");
+            // Track name/artist/album may legally contain tabs; the trailing 6 fields
+            // (duration…favorite) are machine-formatted and never do, so fold any
+            // extra tokens back into the metadata instead of shifting the columns.
+            if (p.length > 10) {
+                const extra = p.length - 10;
+                p.splice(1, 1 + extra, p.slice(1, 2 + extra).join("\t"));
+            }
             const state = p[0];
             if (state !== "playing" && state !== "paused") { showEmpty("np.nothing", "np.hint", true); return; }
 

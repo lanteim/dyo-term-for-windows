@@ -21,6 +21,9 @@
     }
     const prev = (ctx, key) => (ctx._r || (ctx._r = {}))[key];
     const store = (ctx, key, val) => { (ctx._r || (ctx._r = {}))[key] = val; };
+    // Key rate caches by host so a host switch never computes a delta between
+    // two different machines' counters (first sample on a new host emits 0).
+    const hostKey = (ctx, key) => key + ":" + (ctx.host && ctx.host.dest ? ctx.host.dest : "local");
     // Surface the real ssh failure (auth/timeout/host key) instead of a blank.
     const sshErr = r => {
         if (!r) return "no response";
@@ -42,18 +45,23 @@
             if (!m) return;
             const nums = m[2].trim().split(/\s+/).map(N);
             const idle = (nums[3] || 0) + (nums[4] || 0); // idle + iowait
-            const total = nums.reduce((a, b) => a + b, 0);
+            // first 8 fields only: guest/guest_nice (nums[8..9]) are already
+            // accounted inside user/nice — summing them double-counts guest time
+            const total = nums.slice(0, 8).reduce((a, b) => a + b, 0);
             cpus[m[1]] = { total, idle };
         });
         return cpus;
     }
     async function cpu(ctx) {
         const cmd = 'cat /proc/stat 2>/dev/null; echo "@@LOAD"; cat /proc/loadavg 2>/dev/null; echo "@@NPROC"; nproc 2>/dev/null; echo "@@PROCS"; ps -eo pcpu=,pid=,comm= 2>/dev/null | sort -rn | head -n 8';
+        const hkey = hostKey(ctx, "cpu");
         const { r, err } = await fail(ctx, cmd);
         if (err) return err;
         const sec = sections(r.stdout, "STAT");
         const cur = parseStat(sec.STAT);
-        const last = prev(ctx, "cpu"); store(ctx, "cpu", cur);
+        // ps succeeds on macOS/BSD too, so stdout isn't empty there — check /proc/stat itself
+        if (!Object.keys(cur).length) return { error: "empty response (is this Linux with /proc?)" };
+        const last = prev(ctx, hkey); store(ctx, hkey, cur);
         const pct = name => {
             if (!last || !last[name] || !cur[name]) return 0;
             const dt = cur[name].total - last[name].total, di = cur[name].idle - last[name].idle;
@@ -89,6 +97,8 @@
         if (err) return err;
         const sec = sections(r.stdout, "MEM");
         const m = parseMeminfo(sec.MEM);
+        // ps succeeds on macOS/BSD too, so stdout isn't empty there — check /proc/meminfo itself
+        if (!m.total) return { error: "empty response (is this Linux with /proc?)" };
         m.procs = (sec.PROCS || "").trim().split("\n").filter(Boolean).map(l => {
             const p = l.trim().split(/\s+/); return { rss: N(p[0]) * 1024, pid: p[1], name: p.slice(2).join(" ") };
         });
@@ -108,18 +118,20 @@
         return ifaces;
     }
     async function net(ctx) {
-        const cmd = 'cat /proc/net/dev 2>/dev/null; echo "@@CONNS"; cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | wc -l';
+        const cmd = 'cat /proc/net/dev 2>/dev/null; echo "@@CONNS"; cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | grep ":" | wc -l';
+        const hkey = hostKey(ctx, "net");
         const { r, err } = await fail(ctx, cmd);
         if (err) return err;
         const sec = sections(r.stdout, "DEV");
         const ifaces = parseNetDev(sec.DEV);
         // primary = iface with most total bytes
         const primary = ifaces.slice().sort((a, b) => (b.rxBytes + b.txBytes) - (a.rxBytes + a.txBytes))[0] || { iface: "-", rxBytes: 0, txBytes: 0, rxErr: 0, txErr: 0 };
-        const now = Date.now(); const last = prev(ctx, "net");
-        store(ctx, "net", { t: now, rx: primary.rxBytes, tx: primary.txBytes });
+        const now = Date.now(); const last = prev(ctx, hkey);
+        store(ctx, hkey, { t: now, iface: primary.iface, rx: primary.rxBytes, tx: primary.txBytes });
         let rxSec = 0, txSec = 0;
-        if (last && last.t) { const dt = (now - last.t) / 1000; if (dt > 0) { rxSec = Math.max(0, (primary.rxBytes - last.rx) / dt); txSec = Math.max(0, (primary.txBytes - last.tx) / dt); } }
-        const conns = Math.max(0, N((sec.CONNS || "").trim()) - 2); // minus the two header lines
+        // only delta against the same iface — a primary flip would subtract another iface's counters
+        if (last && last.t && last.iface === primary.iface) { const dt = (now - last.t) / 1000; if (dt > 0) { rxSec = Math.max(0, (primary.rxBytes - last.rx) / dt); txSec = Math.max(0, (primary.txBytes - last.tx) / dt); } }
+        const conns = Math.max(0, N((sec.CONNS || "").trim())); // grep ":" matches socket lines only, headers have none
         return { iface: primary.iface, rxSec, txSec, rxBytes: primary.rxBytes, txBytes: primary.txBytes, rxErr: primary.rxErr, txErr: primary.txErr, conns, ifaces };
     }
 
@@ -148,14 +160,15 @@
             const p = l.trim().split(/\s+/);
             if (p.length < 14) return;
             const name = p[2];
-            if (/^(loop|ram|dm-|sr|fd)/.test(name)) return;
-            if (/\d$/.test(name) && /^(sd|vd|nvme|xvd)/.test(name) && !/nvme\d+n\d+$/.test(name)) return; // skip partitions, keep whole disks
+            if (/^(loop|ram|dm-|sr|fd|md)/.test(name)) return; // md arrays are already counted via their member disks
+            if (/\d$/.test(name) && /^(sd|vd|nvme|xvd|mmcblk)/.test(name) && !/(nvme\d+n\d+|mmcblk\d+)$/.test(name)) return; // skip partitions, keep whole disks
             reads += N(p[3]); writes += N(p[7]); rSec += N(p[5]); wSec += N(p[9]);
         });
         return { ios: reads + writes, readBytes: rSec * 512, writeBytes: wSec * 512 };
     }
     async function disk(ctx) {
-        const cmd = 'df -B1 -x tmpfs -x devtmpfs -x overlay -x squashfs 2>/dev/null; echo "@@INODES"; df -iP 2>/dev/null; echo "@@IO"; cat /proc/diskstats 2>/dev/null';
+        const cmd = 'df -P -B1 -x tmpfs -x devtmpfs -x overlay -x squashfs 2>/dev/null; echo "@@INODES"; df -iP 2>/dev/null; echo "@@IO"; cat /proc/diskstats 2>/dev/null';
+        const hkey = hostKey(ctx, "disk");
         const { r, err } = await fail(ctx, cmd);
         if (err) return err;
         const sec = sections(r.stdout, "DF");
@@ -163,8 +176,8 @@
         const inodes = parseInodes(sec.INODES);
         fs.forEach(x => { x.inodePct = inodes[x.mount] != null ? inodes[x.mount] : null; });
         const io = parseDiskstats(sec.IO);
-        const now = Date.now(); const last = prev(ctx, "disk");
-        store(ctx, "disk", { t: now, ios: io.ios, r: io.readBytes, w: io.writeBytes });
+        const now = Date.now(); const last = prev(ctx, hkey);
+        store(ctx, hkey, { t: now, ios: io.ios, r: io.readBytes, w: io.writeBytes });
         let iops = 0, readSec = 0, writeSec = 0;
         if (last && last.t) { const dt = (now - last.t) / 1000; if (dt > 0) { iops = Math.max(0, (io.ios - last.ios) / dt); readSec = Math.max(0, (io.readBytes - last.r) / dt); writeSec = Math.max(0, (io.writeBytes - last.w) / dt); } }
         return { fs, iops, readSec, writeSec };

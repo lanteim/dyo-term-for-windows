@@ -64,7 +64,7 @@ window.APWidget.define({
                     + `<td style="text-align:right"><b style="color:var(--accent)">${fmt.bytes(Math.max(0, v.size - v.used))}</b> free</td>`
                     + `<td style="text-align:right;color:var(--text-dim)">${inoTxt}</td></tr>`;
             }).join("");
-            ctx.setStatus("● " + ctx.host.label);
+            ctx.setStatus("● " + (ctx.host && ctx.host.label ? ctx.host.label : ""));
             return;
         }
         const [fsSize, fsStats, io] = await Promise.all([

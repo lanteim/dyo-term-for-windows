@@ -84,6 +84,8 @@ window.WIDGETS.extra_quote = {
         const onLang = () => { if (!alive) return; $("._ref").textContent = I.t("quote.new"); load(); };
         I.onChange(onLang);
 
-        return { destroy: () => { alive = false; } };
+        // I18N.onChange has no removal API, so the listener stays registered forever;
+        // drop the closure's ref to the widget DOM so destroy() releases the detached tree.
+        return { destroy: () => { alive = false; body = null; } };
     }
 };

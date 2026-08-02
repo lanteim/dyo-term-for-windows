@@ -49,7 +49,7 @@ window.APWidget.define({
             ctx.ref.swchip.className = "apw-chip " + (!m.swapTotal ? "" : swPct > 50 ? "err" : swPct > 10 ? "warn" : "ok");
             ctx.ref.top.innerHTML = (m.procs || []).slice(0, n).map(p =>
                 `<tr><td>${ctx.fmt.esc((p.name || "").slice(0, 20))}</td><td style="color:var(--text-dim)">${p.pid}</td><td style="text-align:right"><b style="color:var(--accent)">${b(p.rss)}</b></td></tr>`).join("");
-            ctx.setStatus("● " + ctx.host.label);
+            ctx.setStatus("● " + (ctx.host && ctx.host.label ? ctx.host.label : ""));
             ctx.graph('[data-ref="g"]', "mem", { min: 0, max: 100 });
             return;
         }

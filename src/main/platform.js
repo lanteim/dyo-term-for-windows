@@ -125,7 +125,10 @@ function cwdOf(pid) {
 
     if (isMac) {
         return new Promise(resolve => {
-            execFile("lsof", ["-a", "-d", "cwd", "-p", String(pid), "-F", "n"], (err, out) => {
+            // lsof can hang on stale network mounts; bound it so the poll
+            // cannot pile up hung probes. Output is one fd record, so a small
+            // maxBuffer is plenty. On timeout/overflow err is set -> null.
+            execFile("lsof", ["-a", "-d", "cwd", "-p", String(pid), "-F", "n"], {timeout: 2000, maxBuffer: 1024 * 1024}, (err, out) => {
                 if (err) return resolve(null);
                 const line = String(out).split("\n").find(l => l.startsWith("n"));
                 resolve(line ? line.slice(1).trim() : null);

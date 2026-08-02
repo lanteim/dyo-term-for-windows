@@ -68,8 +68,9 @@
         if (!canvas) return;
         opts = opts || {};
         const dpr = window.devicePixelRatio || 1;
-        const w = canvas.clientWidth || canvas.width || 200;
-        const h = canvas.clientHeight || canvas.height || 40;
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        if (!w || !h) return; // hidden/collapsed or not laid out — canvas.width is dpr-scaled, never feed it back
         if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
             canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
         }
@@ -188,7 +189,9 @@
             },
             sh(script, opts = {}) {
                 const h = window.__monitorHost;
-                return h ? window.dyo.ssh(h.sshArgs, String(script), opts) : window.dyo.exec("/bin/sh", ["-c", String(script)], opts);
+                // remotely wrap in `sh -c` so the script is parsed by POSIX sh even
+                // when the remote user's login shell is csh/tcsh/fish
+                return h ? window.dyo.ssh(h.sshArgs, "sh -c " + shq(String(script)), opts) : window.dyo.exec("/bin/sh", ["-c", String(script)], opts);
             },
             db: window.dyo.db, http: (...a) => window.dyo.http(...a), fsapi: window.dyo.fs,
             settings: st.settings, fmt,
@@ -200,7 +203,7 @@
             push(key, v) {
                 v = Number(v); if (!isFinite(v)) return;
                 const arr = st.hist[key] || (st.hist[key] = []);
-                const t = Date.now();
+                const t = st.tick || Date.now(); // same stamp for every series of one update cycle
                 arr.push({ t, v });
                 const cut = t - HIST_CAP_MS;
                 while (arr.length && arr[0].t < cut) arr.shift();
@@ -257,25 +260,34 @@
 
         // ── refresh loop (visibility-aware, non-blocking, never overlapping) ──
         let inFlight = false;
+        let epoch = 0;           // bumped on host change — discards in-flight results from the old host
+        let pendingRefresh = false;
+        let runtimeErr = false;  // error status was set by the runtime (not the widget)
         async function runUpdate(manual) {
             if (!st.alive || inFlight) return;
             if (!manual && (!st.visible || collapsed())) return; // idle when hidden → low CPU
             inFlight = true;
             if (frame && frame.setBusy) frame.setBusy(true);
+            const e0 = epoch;
             try {
                 // A prior notAvailable() wiped the widget's DOM — rebuild it so a
                 // recovered update (e.g. after switching to an SSH host that works)
                 // writes into live, re-bound nodes instead of detached ones.
                 if (st.degraded) { try { spec.render(ctx); ctx.bindRefs(); } catch (e) {} st.degraded = false; }
+                st.tick = Date.now(); // one timestamp per update cycle — keeps CSV rows aligned
                 await spec.update(ctx);
+                if (e0 !== epoch) { st.hist = {}; ctx._r = {}; return; } // stale: host changed mid-flight — drop its samples
                 st.lastUpdated = Date.now();
                 if (frame && frame.setUpdated) frame.setUpdated(st.lastUpdated);
+                if (runtimeErr) { runtimeErr = false; if (status.classList.contains("err")) ctx.setStatus(""); }
                 redrawGraphs();
             } catch (e) {
-                ctx.setStatus(String((e && e.message) || e), "err");
+                if (e0 === epoch) { runtimeErr = true; ctx.setStatus(String((e && e.message) || e), "err"); }
             } finally {
+                st.tick = 0;
                 inFlight = false;
                 if (frame && frame.setBusy) frame.setBusy(false);
+                if (pendingRefresh) { pendingRefresh = false; runUpdate(true); }
             }
         }
         function collapsed() { return !!(body.closest(".grid-stack-item") || body).classList && (body.closest(".grid-stack-item") || {}).classList && body.closest(".grid-stack-item").classList.contains("apw-collapsed"); }
@@ -293,6 +305,7 @@
             if (frame.onSettings && schema.length) frame.onSettings(() => openSettings());
         }
 
+        let settingsOv = null; // open settings overlay, removed on destroy()
         function openSettings() {
             const ov = document.createElement("div");
             ov.className = "overlay open";
@@ -304,10 +317,12 @@
                     <button class="chip" data-x="save" style="border-color:var(--accent);color:var(--accent)">Save</button>
                 </div></div>`;
             document.body.appendChild(ov);
-            const close = () => ov.remove();
+            settingsOv = ov;
+            const close = () => { ov.remove(); if (settingsOv === ov) settingsOv = null; };
             ov.addEventListener("click", e => { if (e.target === ov) close(); });
             ov.querySelector('[data-x="cancel"]').onclick = close;
             ov.querySelector('[data-x="save"]').onclick = async () => {
+                if (!st.alive) { close(); return; } // widget was destroyed while the dialog was open
                 schema.forEach(f => {
                     const el = ov.querySelector(`[name="${f.key}"]`);
                     if (!el) return;
@@ -335,14 +350,21 @@
         // Switching host: clear history AND rebuild the DOM to placeholders so the
         // previous host's values don't linger under the new host's badge while the
         // first remote read is in flight (or if it errors).
-        const onHostChange = () => { st.hist = {}; st.degraded = true; renderHost(); runUpdate(true); };
+        const onHostChange = () => {
+            epoch++; // invalidate any in-flight update against the previous host
+            st.hist = {};
+            ctx._r = {}; // drop rate-delta caches (apremote) — counters belong to the old host
+            st.degraded = true;
+            renderHost();
+            if (inFlight) pendingRefresh = true; else runUpdate(true);
+        };
         window.addEventListener("dyo-host-change", onHostChange);
 
         runUpdate(true);
         let iv = setInterval(() => runUpdate(false), interval);
 
         return {
-            destroy() { st.alive = false; clearInterval(iv); if (io) io.disconnect(); window.removeEventListener("dyo-host-change", onHostChange); },
+            destroy() { st.alive = false; clearInterval(iv); if (io) io.disconnect(); window.removeEventListener("dyo-host-change", onHostChange); if (settingsOv) { settingsOv.remove(); settingsOv = null; } },
             refresh: () => runUpdate(true),
         };
     }
@@ -359,7 +381,16 @@
                 description: spec.description || "",
                 defaultSize: spec.defaultSize || { w: 6, h: 4 },
                 apetrov: true,
-                mount(body, frame) { return mount(spec, body, frame || {}); },
+                // mount() is async, but the WIDGETS contract expects a synchronous
+                // {destroy, refresh} handle — return a facade that proxies to the
+                // real instance once initialization resolves.
+                mount(body, frame) {
+                    const p = mount(spec, body, frame || {});
+                    return {
+                        destroy() { p.then(h => h && h.destroy()); },
+                        refresh() { p.then(h => h && h.refresh()); },
+                    };
+                },
             };
         },
     };

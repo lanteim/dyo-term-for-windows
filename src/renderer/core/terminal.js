@@ -11,6 +11,7 @@ class TerminalPane {
     constructor(manager) {
         this.manager = manager;
         this.id = null;
+        this._disposed = false;
         this.el = document.createElement("div");
         this.el.className = "pane";
         this.host = document.createElement("div");
@@ -69,7 +70,7 @@ class TerminalPane {
             }
             if (pasteCombo) {
                 navigator.clipboard.readText().then(t => {
-                    if (this.id && t) window.dyo.pty.input(this.id, t);
+                    if (t) this.term.paste(t);
                 }).catch(() => {});
                 return false;
             }
@@ -93,6 +94,7 @@ class TerminalPane {
             cols: dims.cols || 80,
             rows: dims.rows || 24
         });
+        if (this._disposed) { window.dyo.pty.kill(res.id); return; }
         this.id = res.id;
         window.dyo.pty.onData(this.id, data => this.term.write(data));
         window.dyo.pty.onExit(this.id, () => this.manager.onPaneExit(this));
@@ -101,7 +103,11 @@ class TerminalPane {
         this._cwdTimer = setInterval(async () => {
             if (!this.id) return;
             const cwd = await window.dyo.pty.cwd(this.id);
-            if (cwd) { this.manager.lastCwd = cwd; this.manager.updateTitle(); }
+            const tab = this.manager.activeTab();
+            if (cwd && tab && tab.focused === this && cwd !== this.manager.lastCwd) {
+                this.manager.lastCwd = cwd;
+                this.manager.updateTitle();
+            }
         }, 2000);
     }
 
@@ -115,9 +121,12 @@ class TerminalPane {
     focus() { this.term.focus(); }
 
     dispose() {
+        if (this._disposed) return;
+        this._disposed = true;
         clearInterval(this._cwdTimer);
         this._ro.disconnect();
         if (this.id) { window.dyo.pty.off(this.id); window.dyo.pty.kill(this.id); }
+        this.id = null;
         this.term.dispose();
         this.el.remove();
     }
@@ -292,11 +301,17 @@ class TerminalManager {
     closeTab(i) {
         const tab = this.tabs[i];
         if (!tab) return;
+        const wasActive = i === this.active;
         tab.disposeAll();
         tab.container.remove();
         this.tabs.splice(i, 1);
         if (this.tabs.length === 0) { this.newTab(); return; }
-        this.focusTab(Math.max(0, i - 1));
+        if (wasActive) {
+            this.focusTab(Math.max(0, i - 1));
+        } else {
+            if (i < this.active) this.active--;
+            this.renderTabs();
+        }
     }
 
     activeTab() { return this.tabs[this.active]; }

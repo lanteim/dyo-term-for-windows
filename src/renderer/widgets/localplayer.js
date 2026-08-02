@@ -110,13 +110,19 @@ window.WIDGETS.localplayer = {
         audio.addEventListener("pause", () => R.pp.innerHTML = ICON.play);
         audio.addEventListener("ended", () => tracks.length && playAt(nextIdx()));
         audio.addEventListener("error", () => { if (idx >= 0 && tracks.length > 1) playAt(nextIdx()); }); // skip unplayable format
-        R.vol.addEventListener("input", () => { audio.volume = R.vol.value / 100; window.dyo.settings.set({ musicVol: Number(R.vol.value) }); });
+        let volTimer = 0;
+        R.vol.addEventListener("input", () => { audio.volume = R.vol.value / 100; clearTimeout(volTimer); volTimer = setTimeout(() => window.dyo.settings.set({ musicVol: Number(R.vol.value) }), 300); });
 
+        let scanSeq = 0;
         async function scan(d) {
+            const seq = ++scanSeq;
             R.empty.style.display = "block"; R.empty.innerHTML = "<b>Scanning…</b>";
             const res = await window.dyo.media.scan(d).catch(() => null);
-            if (!alive) return;
-            if (!res || res.error) { showEmpty(res && res.error ? res.error : t("lp.empty"), true); return; }
+            if (!alive || seq !== scanSeq) return; // stale scan: a newer one is in flight / finished
+            if (!res || res.error) {
+                if (tracks.length) { R.empty.style.display = "none"; R.main.style.display = "block"; return; } // failed rescan: keep current playlist
+                showEmpty(res && res.error ? res.error : t("lp.empty"), true); return;
+            }
             tracks = res.files || []; idx = -1;
             if (!tracks.length) { showEmpty(t("lp.empty"), true); return; }
             R.empty.style.display = "none"; R.main.style.display = "block";

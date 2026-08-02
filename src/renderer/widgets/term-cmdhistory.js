@@ -40,9 +40,15 @@ window.WIDGETS.cmdhistory = {
 
         function parseZsh(content) {
             const out = [];
-            for (const line of content.split("\n")) {
+            const lines = content.split("\n");
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
                 if (!line) continue;
-                const m = line.match(/^:\s*\d+:\d+;(.*)$/); // zsh extended: ": <ts>:<dur>;cmd"
+                // multiline entries: an odd number of trailing backslashes means backslash-newline continuation
+                while (/(^|[^\\])(\\\\)*\\$/.test(line) && i + 1 < lines.length) {
+                    line = line.slice(0, -1) + "\n" + lines[++i];
+                }
+                const m = line.match(/^:\s*\d+:\d+;([\s\S]*)$/); // zsh extended: ": <ts>:<dur>;cmd"
                 out.push(m ? m[1] : line);
             }
             return out;
@@ -78,7 +84,7 @@ window.WIDGETS.cmdhistory = {
             else { r = await window.dyo.fs.read(home + "/.bash_history", 2000000); if (r && r.content) content = r.content; }
             if (!alive) return;
             if (content == null) { msg("No .zsh_history / .bash_history"); return; }
-            const parsed = isZsh ? parseZsh(content) : content.split("\n");
+            const parsed = isZsh ? parseZsh(content) : content.split("\n").filter(l => !/^#\d+$/.test(l)); // skip bash HISTTIMEFORMAT "#<epoch>" lines
             const seen = new Set(), dedup = [];
             for (let i = parsed.length - 1; i >= 0; i--) { // newest first, dedup
                 const c = (parsed[i] || "").trim();

@@ -51,7 +51,7 @@ window.APWidget.define({
             ctx.push("rx", d.rxSec); ctx.push("tx", d.txSec);
             ctx.ref.ifaces.innerHTML = (d.ifaces || []).slice(0, 12).map(x =>
                 `<tr><td><b style="color:var(--accent)">${ctx.fmt.esc(x.iface)}</b></td><td style="color:var(--text-dim)">${ctx.fmt.bytes(x.rxBytes)} / ${ctx.fmt.bytes(x.txBytes)}</td><td style="text-align:right"><span class="apw-chip ${(x.rxErr + x.txErr) > 0 ? "err" : "ok"}">${ctx.fmt.num(x.rxErr + x.txErr)} err</span></td></tr>`).join("");
-            ctx.setStatus("● " + ctx.host.label);
+            ctx.setStatus("● " + (ctx.host && ctx.host.label ? ctx.host.label : ""));
             drawBoth(ctx);
             return;
         }

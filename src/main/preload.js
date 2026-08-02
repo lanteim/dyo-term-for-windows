@@ -6,6 +6,10 @@ const {contextBridge, ipcRenderer} = require("electron");
 
 const listeners = {data: new Map(), exit: new Map()};
 
+// Preload re-executes on every page load in the same renderer process; drop
+// any listeners left over from a previous document so they don't accumulate.
+ipcRenderer.removeAllListeners("pty:data");
+ipcRenderer.removeAllListeners("pty:exit");
 ipcRenderer.on("pty:data", (e, id, data) => {
     const cb = listeners.data.get(id);
     if (cb) cb(data);

@@ -74,6 +74,17 @@ class Dashboard {
         }
         this.activeLayout = (settings.activeLayout && this.layouts[settings.activeLayout]) ? settings.activeLayout : Object.keys(this.layouts)[0];
         this._loadLayout(this.activeLayout, false);
+
+        // The dock button (app.js cycleDock) only saves the global dashDock and
+        // never persists the layout profile — mirror dock changes into the active
+        // layout. Armed on a tick so the boot dock apply above runs first.
+        setTimeout(() => {
+            new MutationObserver(() => {
+                const cur = window.__dashDock ? window.__dashDock() : null;
+                const L = this.layouts[this.activeLayout];
+                if (cur && L && L.dock !== cur) this.persist();
+            }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+        }, 0);
     }
 
     listLayouts() { return Object.keys(this.layouts); }
@@ -94,9 +105,14 @@ class Dashboard {
         const L = this.layouts[name];
         this._loading = true;
         if (L.items && L.items.length) L.items.forEach(it => this.addWidget(it.widgetId, it, false));
-        else if (name === "Default") this._defaultLayout();
+        else if (name === "Default" && !L.seeded) this._defaultLayout(); // seed only once — an emptied Default stays empty
         this._loading = false;
-        if (L.dock && window.__setDock) window.__setDock(L.dock);
+        if (name === "Default" && !L.seeded) { L.seeded = true; this.persist(); } // write the seeded/migrated layout now
+        if (L.dock) {
+            if (window.__setDock) window.__setDock(L.dock);
+            // at boot the constructor runs before app.js defines __setDock — apply on a tick
+            else setTimeout(() => { if (window.__setDock) window.__setDock(L.dock); }, 0);
+        }
         if (save) { this.settings.activeLayout = name; window.dyo.settings.set({ activeLayout: name }); }
     }
 
@@ -132,7 +148,6 @@ class Dashboard {
         this.addWidget("clock", { x: 0, y: 0, w: 12, h: 2 }, false);
         this.addWidget("sysmon", { x: 0, y: 2, w: 12, h: 4 }, false);
         this.addWidget("notes", { x: 0, y: 6, w: 12, h: 4 }, false);
-        this.persist();
     }
 
     openCatalog() {
@@ -229,6 +244,7 @@ class Dashboard {
             autoPosition: pos.autoPosition || (pos.x == null),
             id: widgetId + ":" + Math.random().toString(36).slice(2, 7)
         };
+        if (pos.collapsed) opts.h = 1; // saved h is the expanded height; render one row
 
         const content = document.createElement("div");
         content.className = "widget";
@@ -248,6 +264,7 @@ class Dashboard {
         const contentHost = item.querySelector(".grid-stack-item-content");
         contentHost.appendChild(content);
         item.gridstackNode.dyoWidget = widgetId;
+        if (pos.collapsed) { item.classList.add("apw-collapsed"); item.dataset.prevh = pos.h || size.h; }
 
         content.querySelector(".remove").onclick = (e) => {
             e.stopPropagation();
@@ -296,7 +313,11 @@ class Dashboard {
         if (this._loading) return;
         const items = [];
         this.grid.engine.nodes.forEach(n => {
-            items.push({ widgetId: n.dyoWidget, x: n.x, y: n.y, w: n.w, h: n.h });
+            // Save logical state: the expanded height + a collapsed flag, not h:1.
+            const collapsed = !!(n.el && n.el.classList.contains("apw-collapsed"));
+            const it = { widgetId: n.dyoWidget, x: n.x, y: n.y, w: n.w, h: collapsed ? (Number(n.el.dataset.prevh) || n.h) : n.h };
+            if (collapsed) it.collapsed = true;
+            items.push(it);
         });
         if (!this.layouts[this.activeLayout]) this.layouts[this.activeLayout] = {};
         this.layouts[this.activeLayout].items = items;

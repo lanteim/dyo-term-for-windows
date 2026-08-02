@@ -25,8 +25,8 @@ const drivers = {
             const v = await client.query("SELECT version()");
             return { client, version: v.rows[0].version };
         },
-        async query(client, sql) {
-            const r = await client.query(sql);
+        async query(client, sql, params) {
+            const r = await client.query(sql, params && params.length ? params : undefined);
             const rows = Array.isArray(r) ? r[r.length - 1] : r;
             return { columns: (rows.fields || []).map(f => f.name), rows: rows.rows || [], rowCount: rows.rowCount ?? (rows.rows ? rows.rows.length : 0) };
         },
@@ -44,8 +44,8 @@ const drivers = {
             const [rows] = await client.query("SELECT VERSION() AS v");
             return { client, version: rows[0].v };
         },
-        async query(client, sql) {
-            const [rows, fields] = await client.query(sql);
+        async query(client, sql, params) {
+            const [rows, fields] = params && params.length ? await client.execute(sql, params) : await client.query(sql);
             if (Array.isArray(rows)) return normRows((fields || []).map(f => f.name), rows);
             return normRows(["affectedRows"], [{ affectedRows: rows.affectedRows }]);
         },
@@ -63,14 +63,17 @@ const drivers = {
             return { client: conn, version: "ClickHouse " + version };
         },
         async query(conn, sql) {
-            // Try JSON format (modern); fall back to TSVWithNames (very old servers)
+            // Ask for JSON via the default_format URL setting instead of mutating the
+            // SQL: honored by SELECT-type queries, harmless for INSERT/DDL and for
+            // statements that carry their own FORMAT clause.
+            const txt = await clickhousePost(conn, sql.trim().replace(/;+\s*$/, ""), { default_format: "JSON" });
+            if (!txt.trim()) return normRows([], []);
             try {
-                const txt = await clickhousePost(conn, sql.trim().replace(/;+\s*$/, "") + "\nFORMAT JSON");
-                if (!txt.trim()) return normRows([], []);
                 const j = JSON.parse(txt);
                 return normRows((j.meta || []).map(m => m.name), j.data || []);
             } catch (e) {
-                const txt = await clickhousePost(conn, sql.trim().replace(/;+\s*$/, "") + "\nFORMAT TabSeparatedWithNames");
+                // Response wasn't JSON (e.g. the statement had its own FORMAT clause):
+                // present the text we already have as TSV — never re-execute server-side.
                 const lines = txt.replace(/\n$/, "").split("\n");
                 if (!lines[0]) return normRows([], []);
                 const cols = lines[0].split("\t");
@@ -108,10 +111,15 @@ const drivers = {
         async connect(cfg) {
             const Redis = require("ioredis");
             const client = new Redis({ host: cfg.host || "127.0.0.1", port: cfg.port || 6379, password: cfg.password || undefined, db: Number(cfg.database) || 0, lazyConnect: true, connectTimeout: 8000, maxRetriesPerRequest: 1 });
-            await client.connect();
-            const info = await client.info("server");
-            const m = /redis_version:([^\r\n]+)/.exec(info);
-            return { client, version: "Redis " + (m ? m[1] : "?") };
+            try {
+                await client.connect();
+                const info = await client.info("server");
+                const m = /redis_version:([^\r\n]+)/.exec(info);
+                return { client, version: "Redis " + (m ? m[1] : "?") };
+            } catch (err) {
+                client.disconnect(); // stop ioredis's endless background reconnect attempts
+                throw err;
+            }
         },
         // Accepts a command line, e.g. "GET mykey" or "KEYS *"
         async query(client, sql) {
@@ -136,8 +144,11 @@ const drivers = {
             const v = await pool.request().query("SELECT @@VERSION AS v");
             return { client: pool, version: (v.recordset[0].v || "").split("\n")[0] };
         },
-        async query(pool, sql) {
-            const r = await pool.request().query(sql);
+        async query(pool, sql, params) {
+            const request = pool.request();
+            // Positional params are bound as @p1..@pN (mssql only supports named params)
+            if (params && params.length) params.forEach((v, i) => request.input("p" + (i + 1), v));
+            const r = await request.query(sql);
             const rs = r.recordset || [];
             return normRows(rs.length ? Object.keys(rs[0]) : [], rs);
         },
@@ -145,16 +156,23 @@ const drivers = {
     }
 };
 
-async function clickhousePost(conn, body) {
-    const headers = { "X-ClickHouse-User": conn.user, "X-ClickHouse-Key": conn.password };
-    const url = conn.base + "?database=" + encodeURIComponent(conn.database);
-    const r = await fetch(url, { method: "POST", headers, body });
+async function clickhousePost(conn, body, urlParams, timeoutMs) {
+    const headers = {};
+    let url = conn.base + "?database=" + encodeURIComponent(conn.database);
+    // fetch (undici) requires Latin-1 header values; pass non-Latin-1 credentials as URL params instead
+    if (/^[ -ÿ]*$/.test(conn.user + conn.password)) {
+        headers["X-ClickHouse-User"] = conn.user; headers["X-ClickHouse-Key"] = conn.password;
+    } else {
+        url += "&user=" + encodeURIComponent(conn.user) + "&password=" + encodeURIComponent(conn.password);
+    }
+    for (const k of Object.keys(urlParams || {})) url += "&" + encodeURIComponent(k) + "=" + encodeURIComponent(urlParams[k]);
+    const r = await fetch(url, { method: "POST", headers, body, signal: AbortSignal.timeout(timeoutMs || 30000) });
     const txt = await r.text();
     if (!r.ok) throw new Error(txt.slice(0, 400));
     return txt;
 }
 async function clickhouseScalar(conn, sql) {
-    const txt = await clickhousePost(conn, sql + "\nFORMAT TabSeparated");
+    const txt = await clickhousePost(conn, sql + "\nFORMAT TabSeparated", null, 8000);
     return txt.trim();
 }
 
@@ -164,18 +182,27 @@ function register(ipcMain) {
         if (!drv) return { error: `Unknown database type: ${cfg.type}` };
         try {
             const { client, version } = await drv.connect(cfg);
-            const id = "db" + (++seq);
-            connections.set(id, { type: cfg.type, client });
+            const id = "db" + (++seq) + "-" + require("crypto").randomBytes(6).toString("hex");
+            connections.set(id, { type: cfg.type, client, owner: e.sender.id });
+            // pg/mysql2/mssql emit 'error' when an idle connection is severed;
+            // unhandled it throws, and the dead client would linger in the map.
+            if ((cfg.type === "postgres" || cfg.type === "mysql" || cfg.type === "mssql") && typeof client.on === "function") {
+                client.on("error", () => {
+                    if (!connections.has(id)) return;
+                    connections.delete(id);
+                    try { const p = drv.close(client); if (p && p.catch) p.catch(() => { }); } catch (err) { /* ignore */ }
+                });
+            }
             return { id, type: cfg.type, version };
         } catch (err) { return { error: err.message || String(err) }; }
     });
 
-    ipcMain.handle("db:query", async (e, id, sql) => {
+    ipcMain.handle("db:query", async (e, id, sql, params) => {
         const conn = connections.get(id);
-        if (!conn) return { error: "Not connected" };
+        if (!conn || conn.owner !== e.sender.id) return { error: "Not connected" };
         const t0 = Date.now();
         try {
-            const res = await drivers[conn.type].query(conn.client, sql);
+            const res = await drivers[conn.type].query(conn.client, sql, params);
             res.elapsedMs = Date.now() - t0;
             return res;
         } catch (err) { return { error: err.message || String(err) }; }
@@ -183,7 +210,7 @@ function register(ipcMain) {
 
     ipcMain.handle("db:close", async (e, id) => {
         const conn = connections.get(id);
-        if (!conn) return true;
+        if (!conn || conn.owner !== e.sender.id) return true;
         try { await drivers[conn.type].close(conn.client); } catch (err) { /* ignore */ }
         connections.delete(id);
         return true;
