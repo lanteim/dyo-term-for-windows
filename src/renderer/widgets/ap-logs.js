@@ -1,5 +1,5 @@
 "use strict";
-// A.Petrov-style logs widget: recent journalctl lines, level filter, optional
+// Logs widget — commissioned by A. Petrov. Recent journalctl lines, level filter, optional
 // unit, client-side search, level-based coloring. Linux/systemd only.
 const WARN = "#fbbf24"; // matches the existing .apw-chip.warn yellow
 
@@ -19,7 +19,7 @@ window.APWidget.define({
     defaultSize: { w: 12, h: 6 },
     interval: 5000,
     ranges: false,
-    i18n: { en: { "ap.logs.title": "Logs · A.Petrov" }, ru: { "ap.logs.title": "Логи · A.Petrov" } },
+    i18n: { en: { "ap.logs.title": "Logs" }, ru: { "ap.logs.title": "Логи" } },
     settings: [
         { key: "interval", label: "Refresh interval (ms)", type: "number", default: 5000 },
         { key: "level", label: "Max level (-p)", type: "select", default: "warning", options: ["err", "warning", "info", "debug"] },

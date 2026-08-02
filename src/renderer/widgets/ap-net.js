@@ -1,5 +1,5 @@
 "use strict";
-// A.Petrov-style Network widget: rx/tx speed, totals, errors, live dual graph,
+// Network widget — commissioned by A. Petrov. Rx/tx speed, totals, errors, live dual graph,
 // interface list and active connection count — all from systeminformation.
 window.APWidget.define({
     id: "ap-net",
@@ -10,8 +10,8 @@ window.APWidget.define({
     interval: 2000,
     ranges: true,
     i18n: {
-        en: { "ap.net.title": "Network · A.Petrov" },
-        ru: { "ap.net.title": "Сеть · A.Petrov" },
+        en: { "ap.net.title": "Network Traffic" },
+        ru: { "ap.net.title": "Сеть" },
     },
     settings: [
         { key: "interval", label: "Refresh interval (ms)", type: "number", default: 2000 },

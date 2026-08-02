@@ -1,5 +1,5 @@
 "use strict";
-// A.Petrov-style Containers widget: docker (fallback podman) stats — per-container
+// Containers widget — commissioned by A. Petrov. Docker (fallback podman) stats — per-container
 // CPU/MEM/NET/BLK, status chips from `ps -a`, running/total counters and a live
 // graph of total container CPU. Follows the active tab's ssh host via ctx.exec.
 window.APWidget.define({
@@ -11,8 +11,8 @@ window.APWidget.define({
     interval: 5000,
     ranges: true,
     i18n: {
-        en: { "ap.containers.title": "Containers · A.Petrov" },
-        ru: { "ap.containers.title": "Контейнеры · A.Petrov" },
+        en: { "ap.containers.title": "Containers" },
+        ru: { "ap.containers.title": "Контейнеры" },
     },
     settings: [
         { key: "interval", label: "Refresh interval (ms)", type: "number", default: 5000 },

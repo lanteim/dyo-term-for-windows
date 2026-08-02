@@ -1,5 +1,5 @@
 "use strict";
-// A.Petrov-style Memory widget: RAM used/free/active/avail, buffers/cache,
+// Memory widget — commissioned by A. Petrov. RAM used/free/active/avail, buffers/cache,
 // swap, a used-percent bar, live graph, and top processes by memory.
 window.APWidget.define({
     id: "ap-mem",
@@ -9,7 +9,7 @@ window.APWidget.define({
     defaultSize: { w: 6, h: 6 },
     interval: 2000,
     ranges: true,
-    i18n: { en: { "ap.mem.title": "Memory · A.Petrov" }, ru: { "ap.mem.title": "Память · A.Petrov" } },
+    i18n: { en: { "ap.mem.title": "Memory Usage" }, ru: { "ap.mem.title": "Память" } },
     settings: [
         { key: "interval", label: "Refresh interval (ms)", type: "number", default: 2000 },
         { key: "topN", label: "Top processes", type: "number", default: 5 },

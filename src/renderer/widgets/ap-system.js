@@ -1,5 +1,5 @@
 "use strict";
-// A.Petrov-style System widget: uptime, load avg, process/user counts, OS facts.
+// System widget — commissioned by A. Petrov. Uptime, load avg, process/user counts, OS facts.
 window.APWidget.define({
     id: "ap-system",
     title: "ap.system.title",
@@ -8,7 +8,7 @@ window.APWidget.define({
     defaultSize: { w: 6, h: 5 },
     interval: 5000,
     ranges: false,
-    i18n: { en: { "ap.system.title": "System · A.Petrov" }, ru: { "ap.system.title": "System · A.Petrov" } },
+    i18n: { en: { "ap.system.title": "System Overview" }, ru: { "ap.system.title": "Система" } },
     settings: [
         { key: "interval", label: "Refresh interval (ms)", type: "number", default: 5000 },
     ],

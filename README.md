@@ -13,7 +13,7 @@ keyboard resize, **broadcast input** (`Ctrl+Alt+I`), font zoom, upgraded search
 (match count + highlight-all), tab rename/reorder/reopen, a keybinding
 cheat-sheet (`Ctrl+Shift+/`), and Unicode-11 wide-glyph widths.
 
-**A.Petrov-style monitoring** on the **APWidget** framework — CPU / Memory / Disk
+**Live monitoring** *(commissioned by A. Petrov)* on the **APWidget** framework — CPU / Memory / Disk
 / Network / System / Services / Logs / **Containers** / **GPU** panels with
 per-widget refresh, a 1m/5m/15m/1h history graph + CSV export, per-widget
 settings, a standard header (refresh · settings · collapse · close ·
@@ -22,7 +22,7 @@ grid (more columns as it widens) with a **density** control, and richer graphs
 (gridlines, peak line, hover crosshair, warn/crit thresholds + notifications).
 
 - **Metrics follow your SSH session** — when a tab is `ssh`'d into a server, the
-  A.Petrov widgets read *that server's* metrics over your existing ssh; switching
+  monitoring widgets read *that server's* metrics over your existing ssh; switching
   tabs switches the host.
 - **Local music player** — the **Music Folder** widget plays any local audio
   (mp3/flac/m4a/aac/ogg/opus/wav) from a folder you pick: playlist, search, seek,

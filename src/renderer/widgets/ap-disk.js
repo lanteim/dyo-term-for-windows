@@ -1,5 +1,5 @@
 "use strict";
-// A.Petrov-style Disk widget: throughput · IOPS · live total-IO graph · FS usage + inodes.
+// Disk widget — commissioned by A. Petrov. Throughput · IOPS · live total-IO graph · FS usage + inodes.
 window.APWidget.define({
     id: "ap-disk",
     title: "ap.disk.title",
@@ -10,11 +10,11 @@ window.APWidget.define({
     ranges: true,
     i18n: {
         en: {
-            "ap.disk.title": "Disk · A.Petrov", "ap.disk.total": "TOTAL I/O", "ap.disk.read": "Read",
+            "ap.disk.title": "Disk I/O", "ap.disk.total": "TOTAL I/O", "ap.disk.read": "Read",
             "ap.disk.write": "Write", "ap.disk.lat": "Latency", "ap.disk.fs": "Filesystems",
         },
         ru: {
-            "ap.disk.title": "Диск · A.Petrov", "ap.disk.total": "ВСЕГО I/O", "ap.disk.read": "Чтение",
+            "ap.disk.title": "Диск I/O", "ap.disk.total": "ВСЕГО I/O", "ap.disk.read": "Чтение",
             "ap.disk.write": "Запись", "ap.disk.lat": "Задержка", "ap.disk.fs": "Файловые системы",
         },
     },

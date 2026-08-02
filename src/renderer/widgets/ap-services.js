@@ -1,5 +1,5 @@
 "use strict";
-// A.Petrov-style Services widget: systemd units via systemctl — load/active/sub,
+// Services widget — commissioned by A. Petrov. Systemd units via systemctl — load/active/sub,
 // status chips, a failed count, and a name filter. Degrades on non-systemd hosts.
 window.APWidget.define({
     id: "ap-services",
@@ -10,8 +10,8 @@ window.APWidget.define({
     interval: 5000,
     ranges: false,
     i18n: {
-        en: { "ap.services.title": "Services · A.Petrov" },
-        ru: { "ap.services.title": "Services · A.Petrov" },
+        en: { "ap.services.title": "Services" },
+        ru: { "ap.services.title": "Сервисы" },
     },
     settings: [
         { key: "interval", label: "Refresh interval (ms)", type: "number", default: 5000 },

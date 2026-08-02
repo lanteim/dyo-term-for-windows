@@ -1,5 +1,5 @@
 "use strict";
-// A.Petrov-style GPU widget: NVIDIA stats via nvidia-smi — per-GPU utilization,
+// GPU widget — commissioned by A. Petrov. NVIDIA stats via nvidia-smi — per-GPU utilization,
 // memory, temperature and power, plus a live graph of GPU0 utilization.
 // Follows the active tab's ssh host; degrades where nvidia-smi is absent.
 window.APWidget.define({
@@ -10,7 +10,7 @@ window.APWidget.define({
     defaultSize: { w: 6, h: 6 },
     interval: 3000,
     ranges: true,
-    i18n: { en: { "ap.gpu.title": "GPU · A.Petrov" }, ru: { "ap.gpu.title": "GPU · A.Petrov" } },
+    i18n: { en: { "ap.gpu.title": "GPU" }, ru: { "ap.gpu.title": "GPU" } },
     settings: [
         { key: "interval", label: "Refresh interval (ms)", type: "number", default: 3000 },
     ],

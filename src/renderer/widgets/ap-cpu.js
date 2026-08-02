@@ -1,5 +1,5 @@
 "use strict";
-// A.Petrov-style CPU widget: total load, per-core bars, live graph, top procs.
+// CPU widget — commissioned by A. Petrov. Total load, per-core bars, live graph, top procs.
 window.APWidget.define({
     id: "ap-cpu",
     title: "ap.cpu.title",
@@ -8,7 +8,7 @@ window.APWidget.define({
     defaultSize: { w: 6, h: 6 },
     interval: 2000,
     ranges: true,
-    i18n: { en: { "ap.cpu.title": "CPU · A.Petrov" }, ru: { "ap.cpu.title": "CPU · A.Petrov" } },
+    i18n: { en: { "ap.cpu.title": "CPU Usage" }, ru: { "ap.cpu.title": "Загрузка CPU" } },
     settings: [
         { key: "interval", label: "Refresh interval (ms)", type: "number", default: 2000 },
         { key: "topN", label: "Top processes", type: "number", default: 5 },
