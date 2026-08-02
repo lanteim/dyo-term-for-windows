@@ -12,6 +12,7 @@ window.WIDGETS.k8sctx = {
     defaultSize: { w: 6, h: 3 },
     mount(body) {
         const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m]));
+        const shq = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
         body.innerHTML = `
             <div class="metric-row"><span class="k">⎈ CONTEXT</span><span class="v"><b id="_k8c_ctx">…</b></span></div>
             <div class="metric-row"><span class="k">NAMESPACE</span><span class="v" id="_k8c_ns">…</span></div>
@@ -51,7 +52,7 @@ window.WIDGETS.k8sctx = {
                     row.textContent = (active ? "● " : "○ ") + name;
                     row.title = active ? "current context" : "Click to: kubectl config use-context " + name;
                     row.style.cssText = "font-family:var(--font-mono);font-size:11.5px;padding:3px 7px;border:1px solid var(--border);border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--bg-elevated);cursor:" + (active ? "default" : "pointer") + ";color:" + (active ? "var(--accent2)" : "var(--text)");
-                    if (!active) row.onclick = () => window.term && window.term.runInFocused("kubectl config use-context " + name + "\n");
+                    if (!active) row.onclick = () => window.term && window.term.runInFocused("kubectl config use-context " + shq(name) + "\n");
                     list.appendChild(row);
                 });
             } catch (e) {

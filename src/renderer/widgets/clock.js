@@ -7,9 +7,12 @@ window.WIDGETS.clock = {
     description: "Time & date",
     defaultSize: { w: 6, h: 2 },
     mount(body) {
-        body.innerHTML = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%">
-            <div id="_clk_t" style="font-size:34px;font-weight:500;letter-spacing:2px;color:var(--text);font-variant-numeric:tabular-nums"></div>
-            <div id="_clk_d" style="color:var(--text-dim);font-size:12px;letter-spacing:2px;margin-top:4px;text-transform:uppercase"></div>
+        // The time scales to the widget's own box (container query units) so it fills
+        // the width nicely on big widgets yet stays legible when small — width (cqw)
+        // and height (cqh) are both capped so it never overflows a short/wide tile.
+        body.innerHTML = `<div style="container-type:size;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:2px">
+            <div id="_clk_t" style="font-size:clamp(1.7rem, min(15cqw, 42cqh), 6rem);font-weight:500;letter-spacing:2px;line-height:1;color:var(--text);font-variant-numeric:tabular-nums"></div>
+            <div id="_clk_d" style="color:var(--text-dim);font-size:clamp(0.62rem, min(4cqw, 11cqh), 1.05rem);letter-spacing:2px;text-transform:uppercase"></div>
         </div>`;
         const t = body.querySelector("#_clk_t");
         const d = body.querySelector("#_clk_d");

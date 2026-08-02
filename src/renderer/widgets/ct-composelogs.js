@@ -28,14 +28,9 @@ window.WIDGETS = window.WIDGETS || {};
                   <pre id="_ctcolg_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:6px;margin:0;white-space:pre-wrap;word-break:break-word;font-family:var(--font-mono);font-size:11px;line-height:1.35"></pre>
                 </div>`;
             const $ = s => body.querySelector(s);
-            let alive = true, busy = false;
+            let alive = true, busy = false, svc = "";
 
-            const getSvc = () => {
-                try {
-                    const st = window.dyo.settings.get ? window.dyo.settings.get() : null;
-                    return (st && st[SKEY]) ? String(st[SKEY]) : "";
-                } catch (e) { return ""; }
-            };
+            const getSvc = () => svc;
 
             const showForm = () => {
                 const cur = getSvc();
@@ -51,6 +46,7 @@ window.WIDGETS = window.WIDGETS || {};
                 inp.focus();
                 const save = () => {
                     const val = inp.value.trim();
+                    svc = val;
                     try { window.dyo.settings.set({ [SKEY]: val }); } catch (e) { }
                     $("#_ctcolg_form").style.display = "none";
                     $("#_ctcolg_form").innerHTML = "";
@@ -112,8 +108,12 @@ window.WIDGETS = window.WIDGETS || {};
                 else { f.style.display = "none"; f.innerHTML = ""; }
             });
 
-            render();
-            if (getSvc()) tick(); else showForm();
+            window.dyo.settings.get().then(s => {
+                if (!alive) return;
+                svc = (s && s[SKEY]) ? String(s[SKEY]) : "";
+                render();
+                if (svc) tick(); else showForm();
+            });
             const iv = setInterval(tick, 5000);
             return { destroy: () => { alive = false; clearInterval(iv); } };
         }

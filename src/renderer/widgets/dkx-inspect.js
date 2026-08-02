@@ -29,9 +29,6 @@ window.WIDGETS = window.WIDGETS || {};
             const $ = s => body.querySelector(s);
             let alive = true, busy = false;
 
-            const saved = ((window.dyo.settings.get() || {})[SKEY]) || "";
-            $("#_dki_name").value = saved;
-
             const FMT = "{{.Config.Image}}\t{{range $k,$v := .NetworkSettings.Networks}}{{$v.IPAddress}} {{end}}\t{{range $p,$c := .NetworkSettings.Ports}}{{$p}} {{end}}\t{{.State.Status}}";
 
             const rowHtml = (k, v) => `<div class="metric-row" style="display:flex;gap:8px;padding:3px 0"><span class="k" style="color:var(--text-dim);min-width:70px">${esc(k)}</span><span class="v" style="color:var(--text);font-family:var(--font-mono);word-break:break-all">${esc(v || "—")}</span></div>`;
@@ -65,7 +62,12 @@ window.WIDGETS = window.WIDGETS || {};
             $("#_dki_go").addEventListener("click", apply);
             $("#_dki_name").addEventListener("keydown", e => { if (e.key === "Enter") apply(); });
 
-            if (saved) tick(); else $("#_dki_body").innerHTML = `<div style="color:var(--text-dim)">Enter a container name.</div>`;
+            window.dyo.settings.get().then(s => {
+                if (!alive) return;
+                const saved = (s && s[SKEY]) ? String(s[SKEY]) : "";
+                $("#_dki_name").value = saved;
+                if (saved) tick(); else $("#_dki_body").innerHTML = `<div style="color:var(--text-dim)">Enter a container name.</div>`;
+            });
             const iv = setInterval(tick, 6000);
             return { destroy: () => { alive = false; clearInterval(iv); } };
         }

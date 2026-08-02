@@ -20,12 +20,12 @@ window.APWidget.define({
             <div class="metric-row"><span class="k">USERS</span><span class="v"><b data-ref="users">--</b></span></div>
             <div class="apw-th">HOST</div>
             <div class="apw-kv">
-                <span class="k">host</span><span class="v" data-ref="host">--</span>
-                <span class="k">distro</span><span class="v" data-ref="distro">--</span>
-                <span class="k">release</span><span class="v" data-ref="release">--</span>
-                <span class="k">kernel</span><span class="v" data-ref="kernel">--</span>
-                <span class="k">platform</span><span class="v" data-ref="platform">--</span>
-                <span class="k">arch</span><span class="v" data-ref="arch">--</span>
+                <div class="kvp"><span class="k">host</span><span class="v" data-ref="host">--</span></div>
+                <div class="kvp"><span class="k">distro</span><span class="v" data-ref="distro">--</span></div>
+                <div class="kvp"><span class="k">release</span><span class="v" data-ref="release">--</span></div>
+                <div class="kvp"><span class="k">kernel</span><span class="v" data-ref="kernel">--</span></div>
+                <div class="kvp"><span class="k">platform</span><span class="v" data-ref="platform">--</span></div>
+                <div class="kvp"><span class="k">arch</span><span class="v" data-ref="arch">--</span></div>
             </div>`;
     },
     async update(ctx) {

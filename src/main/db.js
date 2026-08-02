@@ -217,4 +217,14 @@ function register(ipcMain) {
     });
 }
 
-module.exports = { register, TYPES: Object.keys(drivers) };
+// Close every open client/pool and clear the map. Called on renderer
+// reload/navigation and on quit so DB sessions don't outlive the window that
+// owns them. Best-effort: failures are swallowed, the map is always cleared.
+function closeAll() {
+    for (const conn of connections.values()) {
+        try { const p = drivers[conn.type].close(conn.client); if (p && p.catch) p.catch(() => { }); } catch (err) { /* ignore */ }
+    }
+    connections.clear();
+}
+
+module.exports = { register, closeAll, TYPES: Object.keys(drivers) };

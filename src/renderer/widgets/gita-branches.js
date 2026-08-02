@@ -12,6 +12,7 @@ window.WIDGETS.gita_branches = {
     defaultSize: { w: 6, h: 5 },
     mount(body) {
         const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m]));
+        const shq = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
         body.innerHTML = `
             <div id="_gb_hint" style="color:var(--text-dim);font-size:11px;margin-bottom:6px">click a branch to checkout</div>
             <div id="_gb_list" style="overflow:auto;max-height:calc(100% - 20px);font-family:var(--font-mono);font-size:12px"></div>`;
@@ -34,7 +35,7 @@ window.WIDGETS.gita_branches = {
                     if (r.current) return;
                     // remote branches -> checkout local tracking of last path segment
                     const target = r.remote ? r.name.replace(/^remotes\//, "").split("/").slice(1).join("/") : r.name;
-                    if (window.term && window.term.runInFocused) window.term.runInFocused("git checkout " + JSON.stringify(target) + "\n");
+                    if (window.term && window.term.runInFocused) window.term.runInFocused("git checkout " + shq(target) + "\n");
                 };
                 list.appendChild(row);
             });

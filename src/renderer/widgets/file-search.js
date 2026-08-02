@@ -76,7 +76,7 @@ window.WIDGETS = window.WIDGETS || {};
                 let out = "", used = "rg";
                 let r = await window.dyo.exec("rg", ["-n", "--max-count", "3", "--", query], { cwd: dir, timeout: 8000 });
                 if (!alive) { busy = false; return; }
-                if (r && r.code === 127 || (r && r.stderr && /not found|No such file/i.test(r.stderr) && !r.stdout)) {
+                if (r && r.code === 127 || (r && r.stderr && /not found|No such file|ENOENT/i.test(r.stderr) && !r.stdout)) {
                     used = "grep";
                     r = await window.dyo.exec("grep", ["-rn", "--", query, "."], { cwd: dir, timeout: 8000 });
                 }

@@ -34,9 +34,10 @@ window.WIDGETS.mac_dnd = {
             const home = (await window.dyo.appInfo()).home;
             const path = home + "/Library/DoNotDisturb/DB/Assertions.json";
             const r = await window.dyo.fs.read(path).catch(() => null);
-            if (r && typeof r === "string" && r.trim()) {
+            const txt = r && !r.error && typeof r.content === "string" ? r.content : "";
+            if (txt.trim()) {
                 try {
-                    const j = JSON.parse(r);
+                    const j = JSON.parse(txt);
                     const recs = (j && j.data && j.data[0] && j.data[0].storeAssertionRecords) || [];
                     if (recs.length) {
                         const mode = recs[0].assertionDetails && recs[0].assertionDetails.assertionDetailsModeIdentifier;

@@ -14,6 +14,7 @@ const pty = require("node-pty");
 const sshdetect = require("./sshdetect.js");
 const si = require("systeminformation");
 const platform = require("./platform");
+const db = require("./db.js");
 const {windowOptions, menuTemplate} = platform;
 
 if (process.env.DYOTERM_USER_DATA) {
@@ -33,6 +34,8 @@ const BUILTIN_THEMES_DIR = path.join(__dirname, "..", "renderer", "themes");
 let win = null;
 const ptys = new Map();      // id -> {proc, cwd}
 let ptySeq = 0;
+let ptyGen = 0;              // bumped on every killAllPtys/navigation; lets an
+                            // in-flight pty:spawn detect it was orphaned mid-await
 
 // ---------------------------------------------------------------- settings ---
 
@@ -159,7 +162,7 @@ function createWindow(settings) {
     // A reload/navigation restarts the renderer with an empty pty map; the old
     // ids can never be re-adopted, so kill the shells instead of leaking them.
     win.webContents.on("did-start-navigation", e => {
-        if (e.isMainFrame && !e.isSameDocument) killAllPtys();
+        if (e.isMainFrame && !e.isSameDocument) { killAllPtys(); db.closeAll(); }
     });
 }
 
@@ -173,6 +176,7 @@ function openExternalSafe(url) {
 // --------------------------------------------------------------------- pty ---
 
 function killAllPtys() {
+    ptyGen++;
     for (const {proc} of ptys.values()) {
         try { proc.kill(); } catch (e) { /* already dead */ }
     }
@@ -181,6 +185,7 @@ function killAllPtys() {
 
 function registerIpc() {
     ipcMain.handle("pty:spawn", async (e, opts = {}) => {
+        const gen = ptyGen;
         const settings = loadSettings();
         if (!loginEnvPromise) loginEnvPromise = getLoginEnv(settings.shell);
         const env = await loginEnvPromise;
@@ -200,6 +205,10 @@ function registerIpc() {
             cwd,
             env
         });
+        // A navigation/kill happened while we were awaiting the login env:
+        // killAllPtys already ran before this proc existed, so registering it
+        // now would orphan the shell. Kill it and bail without registering.
+        if (ptyGen !== gen) { try { proc.kill(); } catch (err) { /* already gone */ } return { error: "navigated" }; }
         ptys.set(id, {proc, cwd});
 
         proc.onData(data => {
@@ -328,7 +337,16 @@ function registerIpc() {
         cpus: os.cpus().length,
         hostname: os.hostname()
     }));
-    ipcMain.handle("open:path", (e, p) => shell.openPath(p));
+    ipcMain.handle("open:path", (e, p) => {
+        // Only *launch* a plain file (open in its default app). A directory or
+        // anything that isn't a regular file — notably .app bundles, which are
+        // directories — is merely revealed in Finder, never launched.
+        let isFile = false;
+        try { isFile = fs.statSync(p).isFile(); } catch (err) { isFile = false; }
+        if (isFile) return shell.openPath(p);
+        shell.showItemInFolder(p);
+        return "";
+    });
     ipcMain.handle("open:external", (e, u) => openExternalSafe(u));
 
     // Run a CLI command for DevOps widgets (git, kubectl, docker, aws, …).
@@ -343,7 +361,9 @@ function registerIpc() {
                 maxBuffer: 8 * 1024 * 1024
             }, (err, stdout, stderr) => {
                 resolve({
-                    code: err ? (typeof err.code === "number" ? err.code : 1) : 0,
+                    // spawn ENOENT (command not found) → 127, so widgets can tell
+                    // "tool missing" apart from a tool that ran and returned nothing.
+                    code: err ? (typeof err.code === "number" ? err.code : (err.code === "ENOENT" ? 127 : 1)) : 0,
                     stdout: String(stdout || ""),
                     stderr: String(stderr || (err && err.message) || "")
                 });
@@ -438,7 +458,7 @@ function registerIpc() {
         } catch (err) { return { error: err.message }; }
     });
 
-    require("./db.js").register(ipcMain);
+    db.register(ipcMain);
 }
 
 // NOTE: the variable is `ps`, not `st` — `st` is a reserved token in AppleScript
@@ -532,7 +552,7 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => app.quit());
-app.on("before-quit", killAllPtys);
+app.on("before-quit", () => { killAllPtys(); db.closeAll(); });
 process.on("uncaughtException", err => {
     console.error(err);
 });

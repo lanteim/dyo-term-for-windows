@@ -2,6 +2,26 @@
 // Widget dashboard built on Gridstack (MIT). Edit mode lets you drag, resize,
 // add and remove widgets iOS-style; the layout persists to settings.
 
+// ── Responsive tuning knobs (kept together so density/columns are easy to tune) ──
+// The layout is authored & persisted in a canonical 12-column space; the *visual*
+// column count scales up on wide monitors so widgets never over-stretch.
+const DYO_BASE_COL = 12;        // canonical persistence space — NEVER changes
+const DYO_MAX_COL = 30;         // widest we ever reflow to
+const DYO_COL_STEP = 6;         // snap columns to multiples of 6 → half-width (w6) and
+                                // full-width (w12) widgets tile with no dead space
+const DYO_COL_LAYOUT = "list";  // GridStack reflow mode. 'list' keeps each widget's cell
+                                // footprint and repacks more per row (the goal). NOT
+                                // 'moveScale' (that just scales widgets 50%→50%, no fix).
+// Per-density: GridStack cellHeight (px), inter-widget margin (px), and the target
+// dash-px per grid column used to pick the column count. Smaller `cell` → more columns.
+const DYO_DENSITY = {
+    compact:     { cellHeight: 56, margin: 4,  cell: 50 },
+    comfortable: { cellHeight: 70, margin: 6,  cell: 60 }, // == current look (default)
+    spacious:    { cellHeight: 88, margin: 10, cell: 76 },
+};
+// With cell 60 the four common monitor classes (dash ≈ 560 / 958 / 1293 / 1931 px)
+// map cleanly to 12 / 18 / 24 / 30 columns; compact/spacious shift those thresholds.
+
 class Dashboard {
     constructor(host, settings) {
         this.settings = settings;
@@ -12,6 +32,7 @@ class Dashboard {
                 <span class="hint" data-i18n="edit.hint">Drag by header · resize from edges · ✕ to remove</span>
             </div>
             <div class="grid-stack"></div>`;
+        this.host = host;
         this.gridEl = host.querySelector(".grid-stack");
 
         // Categorized widget catalog (default is minimal; users add from here)
@@ -45,26 +66,59 @@ class Dashboard {
             this._renderCatalog();
         };
 
+        // Restore saved density (default = comfortable, i.e. the current look).
+        this.density = DYO_DENSITY[settings.density] ? settings.density : "comfortable";
+        this._colCssDone = new Set([1, 12]); // GridStack only ships width CSS for gs-1 / gs-12
+        const dp0 = DYO_DENSITY[this.density];
+        document.body.classList.add("density-" + this.density);
+
         this.grid = window.GridStack.init({
-            column: 12,
-            cellHeight: 70,
-            margin: 6,
+            column: DYO_BASE_COL,
+            cellHeight: dp0.cellHeight,
+            margin: dp0.margin,
             float: false,
             handle: ".widget > header",
             staticGrid: true,
             animate: true
         }, this.gridEl);
 
-        this.grid.on("change", () => this.persist());
+        // Persist on genuine user gestures only. Skip programmatic reflow (adaptive
+        // columns / density) and layout loads so the saved 12-col coordinates are
+        // never overwritten with wide-screen coordinates. isIgnoreChangeCB() is set
+        // by GridStack while a column() reflow fires its change event.
+        this.grid.on("change", () => { if (this._reflowing || this._loading || this.grid.isIgnoreChangeCB()) return; this.persist(); });
 
-        // Keep the "last updated" chrome labels fresh (relative time).
+        // Adaptive columns: watch the dash-col width and reflow the visual column
+        // count so widgets stay a comfortable size on wide/ultrawide monitors.
+        // Debounced; the persisted layout stays in 12-col space (see persist()).
+        this._ro = new ResizeObserver(() => { clearTimeout(this._roTimer); this._roTimer = setTimeout(() => this._syncColumns(), 120); });
+        this._ro.observe(this.host);
+
+        // Keep the "last updated" chrome labels fresh (relative time) and flag any
+        // widget whose data has gone stale — now - lastUpdated > max(3·interval, 15s)
+        // → dim the body + show an amber STALE marker (btop/glances-style). Skipped
+        // for collapsed widgets, which legitimately stop updating.
         setInterval(() => {
             if (!window.APWidget) return;
+            const now = Date.now();
             this.gridEl.querySelectorAll(".w-updated[data-ts]").forEach(el => {
                 const ts = Number(el.dataset.ts);
                 if (ts) el.textContent = window.APWidget.fmt.ago(ts);
+                const widget = el.closest(".widget");
+                if (!widget) return;
+                const item = el.closest(".grid-stack-item");
+                const iv = Number(el.dataset.interval) || 0;
+                const collapsed = item && item.classList.contains("apw-collapsed");
+                const stale = !!(ts && iv && !collapsed && (now - ts) > Math.max(3 * iv, 15000));
+                widget.classList.toggle("stale", stale);
             });
         }, 5000);
+
+        // Keyboard shortcuts on the focused/hovered widget (r/e/c/1-4). One
+        // document listener, added once for the dashboard's lifetime.
+        this._hoverItem = null;
+        this._onKey = (e) => this._handleKey(e);
+        document.addEventListener("keydown", this._onKey);
 
         // Layout profiles: named layouts you can switch between. Migrate any
         // pre-existing single layout into a "Default" profile.
@@ -101,6 +155,9 @@ class Dashboard {
     _loadLayout(name, save) {
         if (!this.layouts[name]) return;
         this.clearAll();
+        // Saved coordinates are authored in the canonical 12-col space — reset the
+        // grid to 12 before placing widgets, then reflow to the width-appropriate count.
+        if (this.grid.getColumn() !== DYO_BASE_COL) { this._reflowing = true; try { this.grid.column(DYO_BASE_COL, "none"); } finally { this._reflowing = false; } }
         this.activeLayout = name;
         const L = this.layouts[name];
         this._loading = true;
@@ -108,6 +165,7 @@ class Dashboard {
         else if (name === "Default" && !L.seeded) this._defaultLayout(); // seed only once — an emptied Default stays empty
         this._loading = false;
         if (name === "Default" && !L.seeded) { L.seeded = true; this.persist(); } // write the seeded/migrated layout now
+        this._syncColumns(); // adapt the visual column count to the current dash width
         if (L.dock) {
             if (window.__setDock) window.__setDock(L.dock);
             // at boot the constructor runs before app.js defines __setDock — apply on a tick
@@ -250,8 +308,10 @@ class Dashboard {
         content.className = "widget";
         content.innerHTML = `<header>
             <span class="title" data-i18n="${def.title}">${window.I18N.t(def.title)}</span>
+            <span class="w-alert"></span>
             <span class="sub"></span>
             <span class="w-updated" title="Last updated"></span>
+            <span class="w-stale" data-i18n="apw.stale"></span>
             <span class="w-tools">
                 <button class="w-btn w-refresh" title="Refresh" style="display:none">${window.ICONS.reload}</button>
                 <button class="w-btn w-settings" title="Settings" style="display:none">${window.ICONS.settings}</button>
@@ -284,12 +344,33 @@ class Dashboard {
         const refreshBtn = content.querySelector(".w-refresh");
         const settingsBtn = content.querySelector(".w-settings");
         const updatedEl = content.querySelector(".w-updated");
+        const alertEl = content.querySelector(".w-alert");
+        const staleEl = content.querySelector(".w-stale");
+        if (staleEl) staleEl.textContent = window.I18N.t("apw.stale");
         const frame = {
             onRefresh: (fn) => { refreshBtn.style.display = ""; refreshBtn.onclick = (e) => { e.stopPropagation(); fn(); }; },
             onSettings: (fn) => { settingsBtn.style.display = ""; settingsBtn.onclick = (e) => { e.stopPropagation(); fn(); }; },
             setBusy: (b) => refreshBtn.classList.toggle("spin", !!b),
-            setUpdated: (ts) => { updatedEl.dataset.ts = ts || 0; updatedEl.textContent = window.APWidget ? window.APWidget.fmt.ago(ts) : ""; },
+            // ts + the widget's current interval (drives the stale-data detector below);
+            // a fresh update also clears any lingering .stale marker immediately.
+            setUpdated: (ts, interval) => {
+                updatedEl.dataset.ts = ts || 0;
+                if (interval) updatedEl.dataset.interval = interval;
+                updatedEl.textContent = window.APWidget ? window.APWidget.fmt.ago(ts) : "";
+                content.classList.remove("stale");
+            },
+            // threshold state → header alert dot (visible even when collapsed)
+            setAlert: (level) => {
+                if (!alertEl) return;
+                alertEl.className = "w-alert" + (level === "warn" || level === "crit" ? " on " + level : "");
+                alertEl.title = level === "crit" ? "Critical threshold breached" : level === "warn" ? "Warning threshold" : "";
+            },
+            setStale: (on) => content.classList.toggle("stale", !!on),
         };
+
+        // Track hover so keyboard shortcuts act on the widget under the pointer.
+        content.addEventListener("mouseenter", () => { this._hoverItem = item; });
+        content.addEventListener("mouseleave", () => { if (this._hoverItem === item) this._hoverItem = null; });
 
         const instance = def.mount(content.querySelector(".body"), frame);
         this.mounted.set(item, { widgetId, instance });
@@ -297,6 +378,7 @@ class Dashboard {
     }
 
     removeItem(item) {
+        if (this._hoverItem === item) this._hoverItem = null;
         const rec = this.mounted.get(item);
         if (rec && rec.instance && rec.instance.destroy) rec.instance.destroy();
         this.mounted.delete(item);
@@ -304,18 +386,102 @@ class Dashboard {
         this.persist();
     }
 
+    // Keyboard shortcuts scoped to the focused/hovered widget. Never hijacks typing
+    // in inputs or while an overlay (catalog/settings) is focused.
+    _handleKey(e) {
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+        const tgt = e.target;
+        if (tgt && tgt.closest && tgt.closest("input, textarea, select, [contenteditable='true'], .overlay")) return;
+        let item = (document.activeElement && document.activeElement.closest) ? document.activeElement.closest(".grid-stack-item") : null;
+        if (!item) item = this._hoverItem;
+        if (!item) return;
+        const widget = item.querySelector(".widget");
+        if (!widget) return;
+        const k = e.key;
+        let handled = true;
+        if (k === "r" || k === "R") {
+            const b = widget.querySelector(".w-refresh");
+            if (b && b.style.display !== "none") b.click();
+            else { const rec = this.mounted.get(item); if (rec && rec.instance && rec.instance.refresh) rec.instance.refresh(); else handled = false; }
+        } else if (k === "e" || k === "E") {
+            const b = widget.querySelector(".apw-export"); if (b) b.click(); else handled = false;
+        } else if (k === "c" || k === "C") {
+            const b = widget.querySelector(".w-collapse"); if (b) b.click(); else handled = false;
+        } else if (k === "1" || k === "2" || k === "3" || k === "4") {
+            const rs = widget.querySelectorAll(".apw-range"); const b = rs[Number(k) - 1]; if (b) b.click(); else handled = false;
+        } else {
+            handled = false;
+        }
+        if (handled) { e.preventDefault(); e.stopPropagation(); }
+    }
+
     setEditing(on) {
         document.body.classList.toggle("editing", on);
         this.grid.setStatic(!on);
     }
 
+    // ---- responsive: adaptive columns + density ------------------------------
+
+    // GridStack ships item-width CSS only for gs-1 / gs-12 (extra.css covers 2–11).
+    // For any wider count we generate the width/left rules once, on demand.
+    _ensureColCss(n) {
+        if (this._colCssDone.has(n)) return;
+        this._colCssDone.add(n);
+        let css = `.gs-${n}>.grid-stack-item{width:${(100 / n).toFixed(4)}%}\n`; // w=1 writes no gs-w attr
+        for (let w = 2; w <= n; w++) css += `.gs-${n}>.grid-stack-item[gs-w="${w}"]{width:${(w * 100 / n).toFixed(4)}%}\n`;
+        for (let x = 1; x < n; x++) css += `.gs-${n}>.grid-stack-item[gs-x="${x}"]{left:${(x * 100 / n).toFixed(4)}%}\n`;
+        let el = document.getElementById("dyo-col-css");
+        if (!el) { el = document.createElement("style"); el.id = "dyo-col-css"; document.head.appendChild(el); }
+        el.textContent += css;
+    }
+
+    // Column count from dash width: aim for a comfortable cell, snap to DYO_COL_STEP,
+    // clamp to [12, 30]. Never goes below 12 so small screens are unchanged.
+    _targetColumns(width) {
+        const cell = (DYO_DENSITY[this.density] || DYO_DENSITY.comfortable).cell;
+        const cols = Math.round(width / cell / DYO_COL_STEP) * DYO_COL_STEP;
+        return Math.max(DYO_BASE_COL, Math.min(DYO_MAX_COL, cols || DYO_BASE_COL));
+    }
+
+    _syncColumns() {
+        if (!this.grid || this._loading) return;
+        const w = this.gridEl.clientWidth || this.host.clientWidth || 0;
+        if (w < 40) return; // dashboard hidden/collapsed — leave the column count as-is
+        const target = this._targetColumns(w);
+        if (target === this.grid.getColumn()) return;
+        this._ensureColCss(target);
+        this._reflowing = true;
+        try { this.grid.column(target, DYO_COL_LAYOUT); } finally { this._reflowing = false; }
+    }
+
+    setDensity(name) { if (DYO_DENSITY[name] && name !== this.density) this._applyDensity(name, true); }
+
+    _applyDensity(name, save) {
+        const d = DYO_DENSITY[name] || DYO_DENSITY.comfortable;
+        document.body.classList.remove("density-compact", "density-comfortable", "density-spacious");
+        document.body.classList.add("density-" + name);
+        this.density = name;
+        if (this.grid) {
+            this.grid.cellHeight(d.cellHeight);
+            this.grid.margin(d.margin);
+            this._syncColumns(); // density shifts the column thresholds — re-evaluate
+        }
+        if (save) { this.settings.density = name; window.dyo.settings.set({ density: name }); }
+    }
+
     persist() {
         if (this._loading) return;
+        const C = this.grid.getColumn(), B = DYO_BASE_COL;
         const items = [];
         this.grid.engine.nodes.forEach(n => {
             // Save logical state: the expanded height + a collapsed flag, not h:1.
             const collapsed = !!(n.el && n.el.classList.contains("apw-collapsed"));
-            const it = { widgetId: n.dyoWidget, x: n.x, y: n.y, w: n.w, h: collapsed ? (Number(n.el.dataset.prevh) || n.h) : n.h };
+            let x = n.x, w = n.w;
+            if (C !== B) { // displayed at an adaptive column count — normalize widths/x back to 12-col space
+                w = Math.max(1, Math.min(B, Math.round(n.w * B / C)));
+                x = Math.max(0, Math.min(B - w, Math.round(n.x * B / C)));
+            }
+            const it = { widgetId: n.dyoWidget, x, y: n.y, w, h: collapsed ? (Number(n.el.dataset.prevh) || n.h) : n.h };
             if (collapsed) it.collapsed = true;
             items.push(it);
         });

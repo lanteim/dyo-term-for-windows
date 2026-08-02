@@ -20,12 +20,12 @@ window.APWidget.define({
         ctx.body.innerHTML = `
             <div class="metric-row"><span class="k">PRIMARY</span><span class="v"><b data-ref="iface">--</b> <span class="apw-chip" data-ref="state">--</span></span></div>
             <div class="apw-kv">
-                <span class="k">&#9660; RX</span><span class="v"><b data-ref="rx">--</b></span>
-                <span class="k">&#9650; TX</span><span class="v"><b data-ref="tx">--</b></span>
-                <span class="k">RX total</span><span class="v" data-ref="rxtot">--</span>
-                <span class="k">TX total</span><span class="v" data-ref="txtot">--</span>
-                <span class="k">Errors</span><span class="v"><span class="apw-chip" data-ref="errs">--</span></span>
-                <span class="k">Connections</span><span class="v"><b data-ref="conns">--</b></span>
+                <div class="kvp"><span class="k">&#9660; RX</span><span class="v"><b data-ref="rx">--</b></span></div>
+                <div class="kvp"><span class="k">&#9650; TX</span><span class="v"><b data-ref="tx">--</b></span></div>
+                <div class="kvp"><span class="k">RX total</span><span class="v" data-ref="rxtot">--</span></div>
+                <div class="kvp"><span class="k">TX total</span><span class="v" data-ref="txtot">--</span></div>
+                <div class="kvp"><span class="k">Errors</span><span class="v"><span class="apw-chip" data-ref="errs">--</span></span></div>
+                <div class="kvp"><span class="k">Connections</span><span class="v"><b data-ref="conns">--</b></span></div>
             </div>
             <div class="apw-th">&#9660; RX / &#9650; TX (bytes/s)</div>
             <canvas class="apw-graph" data-ref="grx"></canvas>

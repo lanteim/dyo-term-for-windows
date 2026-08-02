@@ -42,10 +42,13 @@
     mkBtn("splitV", "btn.splitV", () => term.splitFocused("vertical"));
     mkBtn("splitH", "btn.splitH", () => term.splitFocused("horizontal"));
     mkBtn("search", "btn.search", () => toggleSearch());
+    mkBtn("command", "btn.palette", () => openPalette());
+    mkBtn("keyboard", "btn.cheatsheet", () => openCheatSheet());
     const editBtn = mkBtn("edit", "btn.edit", () => toggleEdit(), "edit-btn");
     mkBtn("palette", "btn.themes", () => openThemes());
     mkBtn("lang", "btn.lang", (e) => openLangMenu(e.currentTarget), "lang-btn");
     const dashBtn = mkBtn("grid", "btn.dash", () => toggleDash(), "dash-btn");
+    mkBtn("density", "btn.density", (e) => openDensityMenu(e.currentTarget), "density-btn");
     const dockBtn = mkBtn("dock", "btn.dock", () => cycleDock(), "dock-btn");
     mkBtn("layers", "btn.layouts", (e) => openLayoutMenu(e.currentTarget), "layouts-btn");
     mkBtn("expand", "btn.fullscreen", () => window.dyo.win("toggleFullscreen"));
@@ -128,6 +131,36 @@
         if (layoutMenu && !layoutMenu.contains(e.target) && !e.target.closest("#layouts-btn")) {
             layoutMenu.remove(); layoutMenu = null;
             document.removeEventListener("mousedown", closeLayoutOnce);
+        }
+    }
+
+    // ---- density menu (Compact / Comfortable / Spacious) ----
+    let densityMenu = null;
+    function openDensityMenu(anchor) {
+        if (densityMenu) { densityMenu.remove(); densityMenu = null; document.removeEventListener("mousedown", closeDensityOnce); return; }
+        densityMenu = document.createElement("div");
+        densityMenu.className = "popmenu";
+        const render = () => {
+            densityMenu.innerHTML = `<div class="popmenu-h" data-i18n="density.title">${window.I18N.t("density.title")}</div>`;
+            ["compact", "comfortable", "spacious"].forEach(name => {
+                const row = document.createElement("div");
+                row.className = "popmenu-row" + (name === window.dash.density ? " active" : "");
+                row.innerHTML = `<span class="nm">${window.I18N.t("density." + name)}</span>`;
+                row.onclick = () => { window.dash.setDensity(name); render(); };
+                densityMenu.appendChild(row);
+            });
+        };
+        render();
+        document.getElementById("app").appendChild(densityMenu);
+        const r = anchor.getBoundingClientRect();
+        densityMenu.style.top = (r.bottom + 6) + "px";
+        densityMenu.style.right = (window.innerWidth - r.right) + "px";
+        setTimeout(() => document.addEventListener("mousedown", closeDensityOnce), 0);
+    }
+    function closeDensityOnce(e) {
+        if (densityMenu && !densityMenu.contains(e.target) && !e.target.closest("#density-btn")) {
+            densityMenu.remove(); densityMenu = null;
+            document.removeEventListener("mousedown", closeDensityOnce);
         }
     }
 
@@ -238,41 +271,185 @@
         if (e.target.id === "theme-overlay") e.currentTarget.classList.remove("open");
     });
 
-    // ---- search bar ----
+    // ---- search bar (Enter=next, Shift+Enter=prev, live count, highlight all) ----
     let searchBar = null;
     function toggleSearch() {
-        if (searchBar) { searchBar.remove(); searchBar = null; return; }
+        if (searchBar) { closeSearch(); return; }
+        const pane = term.activeTab() && term.activeTab().focused;
         searchBar = document.createElement("div");
-        searchBar.style.cssText = "position:absolute;top:44px;right:14px;z-index:20;display:flex;gap:6px;padding:6px;border:1px solid var(--border-strong);border-radius:8px;background:var(--bg-elevated)";
-        searchBar.innerHTML = `<input id="_find" placeholder="${window.I18N.t("find.placeholder")}" style="background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font-mono);width:200px"/>`;
+        searchBar.className = "findbar";
+        searchBar.innerHTML = `
+            <input id="_find" placeholder="${escapeHtml(window.I18N.t("find.placeholder"))}" spellcheck="false"/>
+            <span class="find-count" id="_findcount">0/0</span>
+            <button class="find-btn" id="_findprev" title="${escapeHtml(window.I18N.t("find.prev"))}">${window.ICONS.caretUp}</button>
+            <button class="find-btn" id="_findnext" title="${escapeHtml(window.I18N.t("find.next"))}">${window.ICONS.caretDown}</button>
+            <button class="find-btn" id="_findclose" title="${escapeHtml(window.I18N.t("find.close"))}">${window.ICONS.close}</button>`;
         document.getElementById("terminal-col").appendChild(searchBar);
         const input = searchBar.querySelector("#_find");
+        const count = searchBar.querySelector("#_findcount");
+        searchBar._pane = pane;
+        if (pane && pane.searchAddon && pane.searchAddon.onDidChangeResults) {
+            searchBar._results = pane.searchAddon.onDidChangeResults(r => {
+                const total = r.resultCount || 0;
+                const idx = (r.resultIndex != null && r.resultIndex >= 0) ? (r.resultIndex + 1) : (total ? "–" : 0);
+                count.textContent = `${idx}/${total}`;
+                count.classList.toggle("nomatch", total === 0 && !!input.value);
+            });
+        }
         input.focus();
         input.addEventListener("keydown", e => {
-            if (e.key === "Enter") term.search(input.value);
-            if (e.key === "Escape") toggleSearch();
+            e.stopPropagation();
+            if (e.key === "Enter") { e.preventDefault(); e.shiftKey ? term.searchPrev(input.value) : term.searchNext(input.value); }
+            else if (e.key === "Escape") { e.preventDefault(); closeSearch(); }
         });
+        input.addEventListener("input", () => { input.value ? term.searchNext(input.value, true) : term.searchClear(); });
+        searchBar.querySelector("#_findnext").onclick = () => { term.searchNext(input.value); input.focus(); };
+        searchBar.querySelector("#_findprev").onclick = () => { term.searchPrev(input.value); input.focus(); };
+        searchBar.querySelector("#_findclose").onclick = () => closeSearch();
     }
+    function closeSearch() {
+        if (!searchBar) return;
+        try { searchBar._results && searchBar._results.dispose(); } catch (e) {}
+        try { searchBar._pane && searchBar._pane.searchAddon.clearDecorations(); } catch (e) {}
+        searchBar.remove();
+        searchBar = null;
+        const p = term.activeTab() && term.activeTab().focused;
+        if (p) p.focus();
+    }
+
+    // ---- command palette (fuzzy launcher, implemented in core/palette.js) ----
+    function openPalette() { if (window.Palette) window.Palette.open(); }
+
+    // ---- cycle dashboard layout profiles (palette / cheat-sheet action) ----
+    function cycleLayout() {
+        const names = window.dash.listLayouts();
+        if (!names || names.length < 2) return;
+        const i = names.indexOf(window.dash.activeLayout);
+        window.dash.switchLayout(names[(i + 1) % names.length]);
+    }
+
+    // ---- searchable keybinding cheat-sheet, grouped by category ----
+    let cheatOverlay = null;
+    function openCheatSheet() {
+        if (cheatOverlay) { closeCheatSheet(); return; }
+        cheatOverlay = document.createElement("div");
+        cheatOverlay.className = "overlay cheat-overlay open";
+        cheatOverlay.innerHTML = `
+            <div class="dialog cheat-dialog">
+                <h2>${escapeHtml(window.I18N.t("cheatsheet.title"))}</h2>
+                <input class="cheat-search" placeholder="${escapeHtml(window.I18N.t("cheatsheet.search"))}" spellcheck="false"/>
+                <div class="cheat-body"></div>
+            </div>`;
+        document.body.appendChild(cheatOverlay);
+        const search = cheatOverlay.querySelector(".cheat-search");
+        const body = cheatOverlay.querySelector(".cheat-body");
+        const cats = ["tabs", "panes", "terminal", "view", "dashboard", "app"];
+        const caps = keys => keys ? keys.split(/\s+/).map(x => `<kbd>${escapeHtml(x)}</kbd>`).join("") : "—";
+        const render = () => {
+            const q = search.value.trim().toLowerCase();
+            body.innerHTML = "";
+            cats.forEach(cat => {
+                const items = (window.__actions || []).filter(a => a.cat === cat).filter(a =>
+                    !q || window.I18N.t(a.label).toLowerCase().includes(q) || (a.keys || "").toLowerCase().includes(q));
+                if (!items.length) return;
+                const group = document.createElement("div");
+                group.className = "cheat-group";
+                group.innerHTML = `<div class="cheat-cat">${escapeHtml(window.I18N.t("cat2." + cat))}</div>`;
+                items.forEach(a => {
+                    const row = document.createElement("div");
+                    row.className = "cheat-row";
+                    row.innerHTML = `<span class="cheat-label">${escapeHtml(window.I18N.t(a.label))}</span><span class="cheat-keys">${caps(a.keys)}</span>`;
+                    group.appendChild(row);
+                });
+                body.appendChild(group);
+            });
+            if (!body.children.length) body.innerHTML = `<div class="cheat-empty">${escapeHtml(window.I18N.t("cheatsheet.none"))}</div>`;
+        };
+        render();
+        search.focus();
+        search.addEventListener("input", render);
+        search.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Escape") { e.preventDefault(); closeCheatSheet(); } });
+        cheatOverlay.addEventListener("mousedown", e => { if (e.target === cheatOverlay) closeCheatSheet(); });
+    }
+    function closeCheatSheet() { if (cheatOverlay) { cheatOverlay.remove(); cheatOverlay = null; } }
 
     // ---- keybindings ----
     // macOS: ⌘-based (iTerm-flavoured). Windows/Linux: Ctrl+Shift-based, so the
     // app shortcuts never clash with shell control keys (Ctrl+C/D/W/F/E/K).
+    // Pane nav/resize/broadcast additionally use ⌥ (mac) / Ctrl+Alt (win/linux).
     const isMac = window.__PLATFORM === "darwin";
+
+    // Single source of truth for every app action — consumed by the command
+    // palette (core/palette.js) and the cheat-sheet. `keys` are display-only.
+    const kk = (mac, win) => (isMac ? mac : win);
+    window.__actions = [
+        { id: "newTab",      cat: "tabs",      label: "act.newTab",      keys: kk("⌘T", "Ctrl+Shift+T"),        run: () => term.newTab() },
+        { id: "reopenTab",   cat: "tabs",      label: "act.reopenTab",   keys: kk("⌘⇧T", "Ctrl+Shift+O"),       run: () => term.reopenClosedTab() },
+        { id: "closeTab",    cat: "tabs",      label: "act.closeTab",    keys: kk("⌘W", "Ctrl+Shift+W"),        run: () => term.closeFocusedPane() },
+        { id: "renameTab",   cat: "tabs",      label: "act.renameTab",   keys: "F2",                            run: () => term.renameActiveTab() },
+        { id: "nextTab",     cat: "tabs",      label: "act.nextTab",     keys: kk("⌘1–9", ""),                  run: () => { if (term.tabs.length) term.focusTab((term.active + 1) % term.tabs.length); } },
+        { id: "prevTab",     cat: "tabs",      label: "act.prevTab",     keys: "",                              run: () => { if (term.tabs.length) term.focusTab((term.active - 1 + term.tabs.length) % term.tabs.length); } },
+        { id: "splitV",      cat: "panes",     label: "act.splitV",      keys: kk("⌘D", "Ctrl+Shift+D"),        run: () => term.splitFocused("vertical") },
+        { id: "splitH",      cat: "panes",     label: "act.splitH",      keys: kk("⌘⇧D", "Ctrl+Shift+H"),       run: () => term.splitFocused("horizontal") },
+        { id: "zoom",        cat: "panes",     label: "act.zoom",        keys: kk("⌘⇧↵", "Ctrl+Shift+↵"),       run: () => term.toggleZoom() },
+        { id: "focusLeft",   cat: "panes",     label: "act.focusLeft",   keys: kk("⌘⌥←", "Ctrl+Alt+←"),         run: () => term.focusDir("left") },
+        { id: "focusRight",  cat: "panes",     label: "act.focusRight",  keys: kk("⌘⌥→", "Ctrl+Alt+→"),         run: () => term.focusDir("right") },
+        { id: "focusUp",     cat: "panes",     label: "act.focusUp",     keys: kk("⌘⌥↑", "Ctrl+Alt+↑"),         run: () => term.focusDir("up") },
+        { id: "focusDown",   cat: "panes",     label: "act.focusDown",   keys: kk("⌘⌥↓", "Ctrl+Alt+↓"),         run: () => term.focusDir("down") },
+        { id: "broadcast",   cat: "panes",     label: "act.broadcast",   keys: kk("⌘⌥I", "Ctrl+Alt+I"),         run: () => term.toggleBroadcast() },
+        { id: "clear",       cat: "terminal",  label: "act.clear",       keys: kk("⌘⇧K", "Ctrl+Shift+L"),       run: () => term.clearFocused() },
+        { id: "reset",       cat: "terminal",  label: "act.reset",       keys: kk("⌘⌥⇧K", "Ctrl+Alt+Shift+K"),  run: () => term.resetFocused() },
+        { id: "find",        cat: "terminal",  label: "act.find",        keys: kk("⌘F", "Ctrl+Shift+F"),        run: () => toggleSearch() },
+        { id: "fontInc",     cat: "view",      label: "act.fontInc",     keys: kk("⌘=", "Ctrl+Shift+="),        run: () => term.adjustFont(1) },
+        { id: "fontDec",     cat: "view",      label: "act.fontDec",     keys: kk("⌘-", "Ctrl+Shift+-"),        run: () => term.adjustFont(-1) },
+        { id: "fontReset",   cat: "view",      label: "act.fontReset",   keys: kk("⌘0", "Ctrl+Shift+0"),        run: () => term.resetFont() },
+        { id: "fullscreen",  cat: "view",      label: "act.fullscreen",  keys: kk("⌘↵", "F11"),                 run: () => window.dyo.win("toggleFullscreen") },
+        { id: "themes",      cat: "app",       label: "act.themes",      keys: kk("⌘K", "Ctrl+Shift+K"),        run: () => openThemes() },
+        { id: "layouts",     cat: "dashboard", label: "act.layouts",     keys: "",                              run: () => cycleLayout() },
+        { id: "addWidget",   cat: "dashboard", label: "act.addWidget",   keys: "",                              run: () => window.dash.openCatalog() },
+        { id: "editWidgets", cat: "dashboard", label: "act.editWidgets", keys: kk("⌘E", "Ctrl+Shift+E"),        run: () => toggleEdit() },
+        { id: "toggleDash",  cat: "dashboard", label: "act.toggleDash",  keys: "",                              run: () => toggleDash() },
+        { id: "dockCycle",   cat: "dashboard", label: "act.dockCycle",   keys: "",                              run: () => cycleDock() },
+        { id: "cheatsheet",  cat: "app",       label: "act.cheatsheet",  keys: kk("⌘/", "Ctrl+Shift+/"),        run: () => openCheatSheet() },
+        { id: "palette",     cat: "app",       label: "act.palette",     keys: kk("⌘⇧P", "Ctrl+Shift+P"),       run: () => openPalette() }
+    ];
+
+    // Primary (⌘ / Ctrl+Shift) shortcuts.
     window.addEventListener("keydown", e => {
         if (!isMac && e.key === "F11") { e.preventDefault(); window.dyo.win("toggleFullscreen"); return; }
+        if (e.key === "F2") { e.preventDefault(); term.renameActiveTab(); return; }
         const primary = isMac ? e.metaKey : (e.ctrlKey && e.shiftKey && !e.altKey); // !altKey: AltGr reports ctrl+alt on Windows
         if (!primary) return;
         const k = (e.key || "").toLowerCase();
-        const digit = /^Digit([1-9])$/.exec(e.code || "");
-        if (k === "t") { e.preventDefault(); term.newTab(); }
+        const code = e.code || "";
+        const digit = /^Digit([1-9])$/.exec(code);
+        if (k === "t") { e.preventDefault(); if (isMac && e.shiftKey) term.reopenClosedTab(); else term.newTab(); }
+        else if (!isMac && k === "o") { e.preventDefault(); term.reopenClosedTab(); }
         else if (k === "w") { e.preventDefault(); term.closeFocusedPane(); }
         else if (k === "f") { e.preventDefault(); toggleSearch(); }
         else if (k === "e") { e.preventDefault(); toggleEdit(); }
-        else if (k === "k") { e.preventDefault(); openThemes(); }
+        else if (k === "p") { e.preventDefault(); openPalette(); }
+        else if (code === "Slash" || k === "/" || k === "?") { e.preventDefault(); openCheatSheet(); }
+        else if (k === "k") { e.preventDefault(); if (isMac && e.shiftKey) term.clearFocused(); else openThemes(); }
+        else if (!isMac && k === "l") { e.preventDefault(); term.clearFocused(); }
+        else if (code === "Equal") { e.preventDefault(); term.adjustFont(1); }
+        else if (code === "Minus") { e.preventDefault(); term.adjustFont(-1); }
+        else if (code === "Digit0") { e.preventDefault(); term.resetFont(); }
         else if (digit) { e.preventDefault(); term.focusTab(parseInt(digit[1], 10) - 1); }
-        else if (isMac && k === "enter") { e.preventDefault(); window.dyo.win("toggleFullscreen"); }
+        else if (k === "enter") { e.preventDefault(); if (e.shiftKey) term.toggleZoom(); else if (isMac) window.dyo.win("toggleFullscreen"); }
         else if (k === "d") { e.preventDefault(); term.splitFocused(isMac && e.shiftKey ? "horizontal" : "vertical"); }
         else if (!isMac && k === "h") { e.preventDefault(); term.splitFocused("horizontal"); }
+    });
+
+    // Pane navigation / resize / broadcast — ⌥ (mac) or Ctrl+Alt (win/linux).
+    window.addEventListener("keydown", e => {
+        const altMod = isMac ? (e.metaKey && e.altKey) : (e.ctrlKey && e.altKey);
+        if (!altMod) return;
+        const k = (e.key || "").toLowerCase();
+        const arrow = { arrowleft: "left", arrowright: "right", arrowup: "up", arrowdown: "down" }[k];
+        if (arrow) { e.preventDefault(); if (e.shiftKey) term.resizeFocused(arrow); else term.focusDir(arrow); }
+        else if (k === "i" && !e.shiftKey) { e.preventDefault(); term.toggleBroadcast(); }
+        else if (k === "k" && e.shiftKey) { e.preventDefault(); term.resetFocused(); }
     });
 
     // Copy/paste in form fields (the OS menu deliberately doesn't grab these keys

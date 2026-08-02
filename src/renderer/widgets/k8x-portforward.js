@@ -27,10 +27,11 @@ window.WIDGETS.k8x_portforward = {
         const $ = s => body.querySelector(s);
         let alive = true, forwards = [];
 
+        const shq = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
         const cmdFor = (f) => {
             const parts = ["kubectl", "port-forward"];
-            if (f.ns) parts.push("-n", f.ns);
-            parts.push(f.resource, f.ports);
+            if (f.ns) parts.push("-n", shq(f.ns));
+            parts.push(shq(f.resource), shq(f.ports));
             return parts.join(" ");
         };
 
@@ -79,6 +80,18 @@ window.WIDGETS.k8x_portforward = {
             const ports = $("#_pf_ports").value.trim();
             if (!resource || !ports) {
                 $("#_pf_hint").textContent = "Resource and ports are required (e.g. svc/api and 8080:80).";
+                return;
+            }
+            if (ns && !/^[A-Za-z0-9_.\/-]+$/.test(ns)) {
+                $("#_pf_hint").textContent = "Invalid namespace — use letters, digits and . _ / - only.";
+                return;
+            }
+            if (!/^[A-Za-z0-9_.\/-]+$/.test(resource)) {
+                $("#_pf_hint").textContent = "Invalid resource — use letters, digits and . _ / - only (e.g. svc/api).";
+                return;
+            }
+            if (!/^\d+(:\d+)?$/.test(ports)) {
+                $("#_pf_hint").textContent = "Invalid ports — use 8080 or 8080:80.";
                 return;
             }
             forwards.push({ ns, resource, ports });

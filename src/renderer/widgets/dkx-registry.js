@@ -27,10 +27,7 @@ window.WIDGETS = window.WIDGETS || {};
                   <div id="_dkr_body" style="flex:1;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:8px"><div style="color:var(--text-dim)">Loading…</div></div>
                 </div>`;
             const $ = s => body.querySelector(s);
-            let alive = true, busy = false;
-
-            const saved = ((window.dyo.settings.get() || {})[SKEY]) || "";
-            $("#_dkr_url").value = saved;
+            let alive = true, busy = false, savedUrl = "";
 
             const rowHtml = (k, v) => `<div style="display:flex;gap:8px;padding:3px 0"><span style="color:var(--text-dim);min-width:110px">${esc(k)}</span><span style="color:var(--text);font-family:var(--font-mono);word-break:break-all">${esc(v)}</span></div>`;
 
@@ -80,18 +77,23 @@ window.WIDGETS = window.WIDGETS || {};
             };
 
             const refresh = () => {
-                const url = ((window.dyo.settings.get() || {})[SKEY]) || "";
-                if (url) showConfigured(url); else showInfo();
+                if (savedUrl) showConfigured(savedUrl); else showInfo();
             };
 
             $("#_dkr_save").addEventListener("click", () => {
                 const url = $("#_dkr_url").value.trim();
+                savedUrl = url;
                 window.dyo.settings.set({ [SKEY]: url });
                 refresh();
             });
             $("#_dkr_url").addEventListener("keydown", e => { if (e.key === "Enter") $("#_dkr_save").click(); });
 
-            refresh();
+            window.dyo.settings.get().then(s => {
+                if (!alive) return;
+                savedUrl = (s && s[SKEY]) ? String(s[SKEY]) : "";
+                $("#_dkr_url").value = savedUrl;
+                refresh();
+            });
             return { destroy: () => { alive = false; } };
         }
     };

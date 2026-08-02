@@ -7,6 +7,7 @@ window.WIDGETS = window.WIDGETS || {};
 
 (function () {
     const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m]));
+    const shq = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
 
     window.WIDGETS.sshknown = {
         id: "sshknown",
@@ -41,7 +42,7 @@ window.WIDGETS = window.WIDGETS || {};
                     b.textContent = h;
                     b.title = "ssh " + h + "  (right-click to remove)";
                     b.style.cssText = "border:1px solid var(--border);background:var(--bg-elevated);color:var(--text);border-radius:8px;padding:6px 10px;cursor:pointer;font-family:var(--font-mono);font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
-                    b.onclick = () => { if (window.term) window.term.runInFocused("ssh " + h + "\n"); };
+                    b.onclick = () => { if (window.term) window.term.runInFocused("ssh " + shq(h) + "\n"); };
                     b.oncontextmenu = (e) => { e.preventDefault(); favorites.splice(i, 1); save(); renderFavs(); };
                     favs.appendChild(b);
                 });

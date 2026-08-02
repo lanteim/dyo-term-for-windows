@@ -29,9 +29,9 @@ window.APWidget.define({
                 <span class="v"><b data-ref="tot">--</b> IOPS<span data-ref="rw" style="color:var(--text-dim);margin-left:8px"></span></span></div>
             <canvas class="apw-graph" data-ref="g" style="margin-top:6px"></canvas>
             <div class="apw-kv" style="margin-top:8px">
-                <span class="k">${t("ap.disk.read")}</span><span class="v"><b data-ref="rb">--</b> · <span data-ref="ri">--</span> IOPS</span>
-                <span class="k">${t("ap.disk.write")}</span><span class="v"><b data-ref="wb">--</b> · <span data-ref="wi">--</span> IOPS</span>
-                <span class="k">${t("ap.disk.lat")}</span><span class="v" data-ref="lat">--</span>
+                <div class="kvp"><span class="k">${t("ap.disk.read")}</span><span class="v"><b data-ref="rb">--</b> · <span data-ref="ri">--</span> IOPS</span></div>
+                <div class="kvp"><span class="k">${t("ap.disk.write")}</span><span class="v"><b data-ref="wb">--</b> · <span data-ref="wi">--</span> IOPS</span></div>
+                <div class="kvp"><span class="k">${t("ap.disk.lat")}</span><span class="v" data-ref="lat">--</span></div>
             </div>
             <div class="apw-th">${t("ap.disk.fs")}</div>
             <table><tbody data-ref="fs"></tbody></table>`;

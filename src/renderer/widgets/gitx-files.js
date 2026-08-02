@@ -12,6 +12,7 @@ window.WIDGETS.gitfiles = {
     defaultSize: { w: 6, h: 4 },
     mount(body) {
         const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m]));
+        const shq = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
         body.innerHTML = `
             <div id="_gf_hint" style="color:var(--text-dim);font-size:11px;margin-bottom:6px">click a file to stage it (git add)</div>
             <div id="_gf_list" style="overflow:auto;max-height:100%;font-family:var(--font-mono);font-size:12px"></div>`;
@@ -41,7 +42,7 @@ window.WIDGETS.gitfiles = {
                 row.onmouseleave = () => row.style.background = "transparent";
                 row.innerHTML = `<span style="color:${colorForStatus(en.xy)};width:22px;flex:none;text-align:center">${esc(en.xy.replace(/ /g, "·"))}</span><span style="color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(en.file)}</span>`;
                 row.onclick = () => {
-                    if (window.term && window.term.runInFocused) window.term.runInFocused("git add " + JSON.stringify(en.file) + "\n");
+                    if (window.term && window.term.runInFocused) window.term.runInFocused("git add " + shq(en.file) + "\n");
                 };
                 list.appendChild(row);
             });

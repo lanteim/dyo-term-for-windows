@@ -9,9 +9,9 @@ window.WIDGETS = window.WIDGETS || {};
     const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m]));
 
     const toBytes = s => {
-        const m = /^([\d.]+)\s*([KMGTP]?)i?B?$/i.exec(s.trim());
+        const m = /^([\d]+(?:[.,]\d+)?)\s*([KMGTP]?)i?B?$/i.exec(s.trim());
         if (!m) return 0;
-        const n = parseFloat(m[1]) || 0;
+        const n = parseFloat(m[1].replace(",", ".")) || 0;
         const u = (m[2] || "").toUpperCase();
         const mult = { "": 1, K: 1024, M: 1024 ** 2, G: 1024 ** 3, T: 1024 ** 4, P: 1024 ** 5 }[u] || 1;
         return n * mult;

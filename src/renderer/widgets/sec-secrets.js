@@ -71,7 +71,7 @@ window.WIDGETS.sec_secrets = {
             patterns.forEach(p => { args.push("-e", p[1]); });
             args.push(".");
             const r = await window.dyo.exec("rg", args, { cwd: c, timeout: 30000 });
-            if (!r || (r.code > 1)) return null; // rg missing (code 2) or unusable; code 1 = no matches
+            if (!r || (r.code > 1) || /ENOENT/.test(r.stderr || "")) return null; // rg missing (127/ENOENT) or unusable; code 1 = no matches
             const rows = [];
             (r.stdout || "").split("\n").forEach(l => {
                 if (!l.trim()) return;

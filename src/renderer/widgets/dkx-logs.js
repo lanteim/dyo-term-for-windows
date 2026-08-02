@@ -30,9 +30,6 @@ window.WIDGETS = window.WIDGETS || {};
             const $ = s => body.querySelector(s);
             let alive = true, busy = false;
 
-            const saved = ((window.dyo.settings.get() || {})[SKEY]) || "";
-            $("#_dkl_name").value = saved;
-
             const tick = async () => {
                 if (!alive || busy) return;
                 const name = $("#_dkl_name").value.trim();
@@ -62,7 +59,12 @@ window.WIDGETS = window.WIDGETS || {};
             $("#_dkl_go").addEventListener("click", apply);
             $("#_dkl_name").addEventListener("keydown", e => { if (e.key === "Enter") apply(); });
 
-            if (saved) tick(); else $("#_dkl_out").textContent = "Enter a container name and press Tail.";
+            window.dyo.settings.get().then(s => {
+                if (!alive) return;
+                const saved = (s && s[SKEY]) ? String(s[SKEY]) : "";
+                $("#_dkl_name").value = saved;
+                if (saved) tick(); else $("#_dkl_out").textContent = "Enter a container name and press Tail.";
+            });
             const iv = setInterval(tick, 5000);
             return { destroy: () => { alive = false; clearInterval(iv); } };
         }

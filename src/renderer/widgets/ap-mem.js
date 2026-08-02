@@ -41,7 +41,7 @@ window.APWidget.define({
             ctx.ref.abs.textContent = b(m.used) + " / " + b(m.total);
             ctx.push("mem", pct);
             ctx.ref.kv.innerHTML = [["Used", m.used], ["Free", m.free], ["Available", m.available], ["Buffers", m.buffers], ["Cache", m.cached]]
-                .map(([k, v]) => `<span class="k">${k}</span><span class="v"><b>${b(v || 0)}</b></span>`).join("");
+                .map(([k, v]) => `<div class="kvp"><span class="k">${k}</span><span class="v"><b>${b(v || 0)}</b></span></div>`).join("");
             const swPct = m.swapTotal ? Math.max(0, Math.min(100, (m.swapUsed / m.swapTotal) * 100)) : 0;
             ctx.ref.swpct.textContent = Math.round(swPct);
             ctx.ref.swbar.style.width = swPct + "%";
@@ -71,7 +71,7 @@ window.APWidget.define({
             ["Available", mem.available], ["Buffers", mem.buffers], ["Cache", cache],
         ];
         ctx.ref.kv.innerHTML = rows.map(([k, v]) =>
-            `<span class="k">${k}</span><span class="v"><b>${b(v || 0)}</b></span>`).join("");
+            `<div class="kvp"><span class="k">${k}</span><span class="v"><b>${b(v || 0)}</b></span></div>`).join("");
 
         // swap
         const swTot = mem.swaptotal || 0, swUsed = mem.swapused || 0;

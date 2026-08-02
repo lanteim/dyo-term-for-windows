@@ -7,11 +7,19 @@ with **340+ widgets across 27 categories** (system, Kubernetes, Docker, cloud,
 git, databases, web/API tools, security, observability, dev utilities, and
 more), a theme gallery, and English/Russian language packs.
 
+**Power-user terminal** — a fuzzy **command palette** (`Ctrl+Shift+P`), pane
+**zoom** (`Ctrl+Shift+Enter`), directional pane focus (`Ctrl+Alt`+arrows) and
+keyboard resize, **broadcast input** (`Ctrl+Alt+I`), font zoom, upgraded search
+(match count + highlight-all), tab rename/reorder/reopen, a keybinding
+cheat-sheet (`Ctrl+Shift+/`), and Unicode-11 wide-glyph widths.
+
 **A.Petrov-style monitoring** on the **APWidget** framework — CPU / Memory / Disk
-/ Network / System / Services / Logs panels with per-widget refresh, a
-1m/5m/15m/1h history graph + CSV export, per-widget settings, a standard header
-(refresh · settings · collapse · close · last-updated), plus **4-side dashboard
-docking** and **layout profiles**.
+/ Network / System / Services / Logs / **Containers** / **GPU** panels with
+per-widget refresh, a 1m/5m/15m/1h history graph + CSV export, per-widget
+settings, a standard header (refresh · settings · collapse · close ·
+last-updated), plus **4-side docking**, **layout profiles**, a **responsive**
+grid (more columns as it widens) with a **density** control, and richer graphs
+(gridlines, peak line, hover crosshair, warn/crit thresholds + notifications).
 
 - **Metrics follow your SSH session** — when a tab is `ssh`'d into a server, the
   A.Petrov widgets read *that server's* metrics over your existing ssh; switching

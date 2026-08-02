@@ -8,10 +8,12 @@ const { SearchAddon } = window.SearchAddon;
 const { WebLinksAddon } = window.WebLinksAddon;
 
 class TerminalPane {
-    constructor(manager) {
+    constructor(manager, opts = {}) {
         this.manager = manager;
         this.id = null;
         this._disposed = false;
+        this._spawnCwd = opts.cwd || null;   // restored cwd for reopened tabs
+        this.paneCwd = opts.cwd || null;      // last known cwd, tracked by the poll
         this.el = document.createElement("div");
         this.el.className = "pane";
         this.host = document.createElement("div");
@@ -22,7 +24,7 @@ class TerminalPane {
         this.term = new Terminal({
             allowProposedApi: true,
             fontFamily: `"${s.fontFamily || "JetBrains Mono"}", ui-monospace, Menlo, monospace`,
-            fontSize: s.fontSize || 14,
+            fontSize: manager.fontSize || s.fontSize || 14,
             cursorBlink: s.cursorBlink !== false,
             cursorStyle: s.cursorStyle || "bar",
             scrollback: 5000,
@@ -44,8 +46,23 @@ class TerminalPane {
             } catch (e) { /* DOM renderer fallback */ }
         }
 
+        // Unicode 11 grapheme widths (emoji / CJK / combining marks line up right)
+        try {
+            const U = window.Unicode11Addon;
+            const U11 = U && (U.Unicode11Addon || U);
+            if (U11) {
+                this.term.loadAddon(new U11());
+                this.term.unicode.activeVersion = "11";
+            }
+        } catch (e) { /* unicode addon optional */ }
+
         this.el.addEventListener("mousedown", () => manager.focusPane(this), true);
-        this.term.onData(d => { if (this.id) window.dyo.pty.input(this.id, d); });
+        // Origin keystrokes go to this pty; broadcast mode mirrors them to siblings.
+        this.term.onData(d => {
+            if (!this.id) return;
+            window.dyo.pty.input(this.id, d);
+            this.manager.maybeBroadcast(this, d);
+        });
 
         // Terminal copy/paste on the native keys, copying xterm's own selection
         // (works with the WebGL renderer, where the DOM selection is empty):
@@ -70,15 +87,29 @@ class TerminalPane {
             }
             if (pasteCombo) {
                 navigator.clipboard.readText().then(t => {
-                    if (t) this.term.paste(t);
+                    if (t) this.manager.guardedPaste(this, t);
                 }).catch(() => {});
                 return false;
             }
             // App shortcuts (⌘… on mac, Ctrl+Shift+… on win/linux) are handled by
             // the window keydown handler; don't let xterm also send them to the pty.
             if (isMac ? e.metaKey : (e.ctrlKey && e.shiftKey)) return false;
+            // Win/Linux pane nav + broadcast use Ctrl+Alt; keep them out of the shell.
+            if (!isMac && e.ctrlKey && e.altKey &&
+                (key === "i" || key === "arrowleft" || key === "arrowright" ||
+                 key === "arrowup" || key === "arrowdown")) return false;
             return true;
         });
+
+        // Context-menu / middle-click paste also flows through the multiline guard.
+        this.host.addEventListener("paste", e => {
+            const text = e.clipboardData && e.clipboardData.getData("text");
+            if (text && (text.includes("\n") || text.length > 1500)) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.manager.guardedPaste(this, text);
+            }
+        }, true);
 
         this._ro = new ResizeObserver(() => this.fit());
         this._ro.observe(this.host);
@@ -90,7 +121,7 @@ class TerminalPane {
         this.fit();
         const dims = this.fitAddon.proposeDimensions() || { cols: 80, rows: 24 };
         const res = await window.dyo.pty.spawn({
-            cwd: this.manager.lastCwd,
+            cwd: this._spawnCwd || this.manager.lastCwd,
             cols: dims.cols || 80,
             rows: dims.rows || 24
         });
@@ -103,6 +134,7 @@ class TerminalPane {
         this._cwdTimer = setInterval(async () => {
             if (!this.id) return;
             const cwd = await window.dyo.pty.cwd(this.id);
+            if (cwd) this.paneCwd = cwd;   // per-pane cwd, used when reopening a closed tab
             const tab = this.manager.activeTab();
             if (cwd && tab && tab.focused === this && cwd !== this.manager.lastCwd) {
                 this.manager.lastCwd = cwd;
@@ -134,21 +166,72 @@ class TerminalPane {
 
 // A tab owns a tree of nodes: {pane} leaf, or {dir, a, b, split} internal.
 class Tab {
-    constructor(manager) {
+    constructor(manager, spec) {
         this.manager = manager;
         this.container = document.createElement("div");
         this.container.className = "split vertical";
         this.container.style.flex = "1";
-        const pane = new TerminalPane(manager);
-        this.root = { pane };
-        this.focused = pane;
+        this.customName = (spec && spec.customName) || null;   // survives the cwd poll
+        this.broadcast = false;
+        this.zoomed = false;
+        this.zoomEl = null;
+        if (spec && spec.root) {
+            const build = n => n.dir
+                ? { dir: n.dir, sizes: (n.sizes || [0.5, 0.5]).slice(), a: build(n.a), b: build(n.b) }
+                : { pane: new TerminalPane(manager, { cwd: n.cwd }) };
+            this.root = build(spec.root);
+        } else {
+            this.root = { pane: new TerminalPane(manager) };
+        }
+        this.focused = this._firstPane(this.root);
         this._mount();
     }
 
     _mount() {
+        if (this.zoomed) {
+            this.zoomed = false;
+            this.zoomEl = null;
+            this.container.classList.remove("zoomed");
+            this.panes().forEach(p => p.el.classList.remove("zoom-target"));
+        }
         this.container.innerHTML = "";
         this.container.appendChild(this._render(this.root, this.container));
+        this._applyBroadcastUI();
         requestAnimationFrame(() => this._fitAll(this.root));
+    }
+
+    // Maximize the focused pane to fill the whole tab; toggle again to restore the
+    // exact split tree. Panes stay mounted (visibility only) so no pty is recreated.
+    toggleZoom() {
+        if (this.zoomed) {
+            this.container.classList.remove("zoomed");
+            if (this.zoomEl) this.zoomEl.classList.remove("zoom-target");
+            this.zoomed = false;
+            this.zoomEl = null;
+        } else {
+            const p = this.focused;
+            if (!p || this.panes().length < 2) return;   // single pane already fills
+            p.el.classList.add("zoom-target");
+            this.container.classList.add("zoomed");
+            this.zoomed = true;
+            this.zoomEl = p.el;
+        }
+        requestAnimationFrame(() => { this._fitAll(this.root); if (this.focused) this.focused.focus(); });
+    }
+
+    setBroadcast(on) { this.broadcast = !!on; this._applyBroadcastUI(); }
+
+    _applyBroadcastUI() {
+        this.container.classList.toggle("broadcasting", this.broadcast);
+        let banner = this.container.querySelector(":scope > .broadcast-banner");
+        if (this.broadcast && !banner) {
+            banner = document.createElement("div");
+            banner.className = "broadcast-banner";
+            banner.textContent = window.I18N ? window.I18N.t("broadcast.banner") : "BROADCASTING";
+            this.container.appendChild(banner);
+        } else if (!this.broadcast && banner) {
+            banner.remove();
+        }
     }
 
     _render(node) {
@@ -254,6 +337,10 @@ class TerminalManager {
     constructor(settings) {
         this.settings = settings;
         this.lastCwd = settings.cwd;
+        this._defaultFontSize = settings.fontSize || 14;
+        const fs = settings.termFontSize;
+        this.fontSize = (typeof fs === "number" && fs >= 8 && fs <= 28) ? fs : this._defaultFontSize;
+        this.closedStack = [];   // serialized trees of recently-closed tabs (reopen)
         this.tabs = [];
         this.active = -1;
         this.tabbar = document.getElementById("tabbar");
@@ -302,6 +389,7 @@ class TerminalManager {
         const tab = this.tabs[i];
         if (!tab) return;
         const wasActive = i === this.active;
+        this._pushClosed(tab);
         tab.disposeAll();
         tab.container.remove();
         this.tabs.splice(i, 1);
@@ -340,29 +428,208 @@ class TerminalManager {
         if (emptied) this.closeTab(this.active);
     }
 
-    updateTitle() { this.renderTabs(); }
+    updateTitle() { if (this._renaming) return; this.renderTabs(); }
 
     renderTabs() {
         this.tabsWrap.innerHTML = "";
         this.tabs.forEach((tab, idx) => {
             const el = document.createElement("div");
-            el.className = "tab" + (idx === this.active ? " active" : "");
+            el.className = "tab" + (idx === this.active ? " active" : "") + (tab.broadcast ? " broadcasting" : "");
+            el.draggable = true;
             const short = (this.lastCwd || "~").split("/").pop() || "/";
-            el.innerHTML = `<span class="dot"></span><span class="label">${idx + 1}: ${escapeHtml(idx === this.active ? short : "shell")}</span>`;
+            const title = tab.customName ? tab.customName : `${idx + 1}: ${idx === this.active ? short : "shell"}`;
+            el.innerHTML = `<span class="dot"></span><span class="label">${escapeHtml(title)}</span>`;
             const close = document.createElement("span");
             close.className = "close";
             close.innerHTML = window.ICONS.close;
             close.onclick = (e) => { e.stopPropagation(); this.closeTab(idx); };
             el.appendChild(close);
             el.onclick = () => this.focusTab(idx);
+            el.ondblclick = (e) => { e.stopPropagation(); this._beginRename(idx, el); };
+            // Drag to reorder
+            el.addEventListener("dragstart", e => { this._dragIdx = idx; el.classList.add("dragging"); try { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(idx)); } catch (_) {} });
+            el.addEventListener("dragend", () => el.classList.remove("dragging"));
+            el.addEventListener("dragover", e => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; });
+            el.addEventListener("drop", e => { e.preventDefault(); this._moveTab(this._dragIdx, idx); });
             this.tabsWrap.appendChild(el);
         });
     }
 
-    search(query) {
-        const t = this.activeTab();
-        if (t && t.focused) t.focused.searchAddon.findNext(query, { regex: false, caseSensitive: false });
+    // ---- inline tab rename (double-click or F2) ----
+    _beginRename(idx, el) {
+        const tab = this.tabs[idx];
+        if (!tab || !el) return;
+        const label = el.querySelector(".label");
+        if (!label) return;
+        this._renaming = true;
+        const input = document.createElement("input");
+        input.className = "tab-rename";
+        input.value = tab.customName || "";
+        input.placeholder = label.textContent;
+        input.spellcheck = false;
+        label.replaceWith(input);
+        input.focus();
+        input.select();
+        const commit = (save) => {
+            if (!this._renaming) return;
+            this._renaming = false;
+            if (save) tab.customName = input.value.trim() || null;
+            this.renderTabs();
+        };
+        input.addEventListener("keydown", e => {
+            e.stopPropagation();
+            if (e.key === "Enter") { e.preventDefault(); commit(true); }
+            else if (e.key === "Escape") { e.preventDefault(); commit(false); }
+        });
+        input.addEventListener("blur", () => commit(true));
+        input.onclick = e => e.stopPropagation();
+        input.ondblclick = e => e.stopPropagation();
     }
+
+    renameActiveTab() {
+        const el = this.tabsWrap.children[this.active];
+        if (el) this._beginRename(this.active, el);
+    }
+
+    _moveTab(from, to) {
+        if (from == null || from === to || from < 0 || to < 0 || from >= this.tabs.length || to >= this.tabs.length) { this._dragIdx = null; return; }
+        const activeRef = this.tabs[this.active];
+        const [moved] = this.tabs.splice(from, 1);
+        this.tabs.splice(to, 0, moved);
+        this.active = this.tabs.indexOf(activeRef);
+        this._dragIdx = null;
+        this.renderTabs();
+    }
+
+    // ---- reopen closed tab: serialize the split tree + each pane's cwd ----
+    _pushClosed(tab) {
+        try {
+            const ser = n => n.pane
+                ? { cwd: n.pane.paneCwd || n.pane._spawnCwd || this.lastCwd }
+                : { dir: n.dir, sizes: n.sizes ? n.sizes.slice() : undefined, a: ser(n.a), b: ser(n.b) };
+            this.closedStack.push({ root: ser(tab.root), customName: tab.customName });
+            if (this.closedStack.length > 10) this.closedStack.shift();
+        } catch (e) { /* ignore serialization issues */ }
+    }
+
+    reopenClosedTab() {
+        const spec = this.closedStack.pop();
+        if (!spec) return;
+        const tab = new Tab(this, spec);
+        this.tabs.push(tab);
+        this.panesHost.appendChild(tab.container);
+        this.focusTab(this.tabs.length - 1);
+        this.renderTabs();
+        setTimeout(() => tab.focused && tab.focused.focus(), 30);
+    }
+
+    // ---- pane zoom / broadcast / clear / reset ----
+    toggleZoom() { const t = this.activeTab(); if (t) t.toggleZoom(); }
+
+    toggleBroadcast() { const t = this.activeTab(); if (!t) return; t.setBroadcast(!t.broadcast); this.renderTabs(); }
+
+    maybeBroadcast(origin, data) {
+        const tab = this.tabs.find(t => t.broadcast && t.panes().includes(origin));
+        if (!tab) return;
+        tab.panes().forEach(p => { if (p !== origin && p.id) window.dyo.pty.input(p.id, data); });
+    }
+
+    clearFocused() { const t = this.activeTab(); if (t && t.focused) { t.focused.term.clear(); t.focused.focus(); } }
+    resetFocused() { const t = this.activeTab(); if (t && t.focused) { t.focused.term.reset(); t.focused.focus(); } }
+
+    // ---- multiline / large paste guard ----
+    guardedPaste(pane, text) {
+        if (!text) return;
+        if (!(text.includes("\n") || text.length > 1500)) { pane.term.paste(text); return; }
+        showPasteGuard(text, () => { pane.term.paste(text); pane.focus(); });
+    }
+
+    // ---- live font zoom across every pane ----
+    adjustFont(delta) { this.fontSize = Math.min(28, Math.max(8, this.fontSize + delta)); this._applyFont(); }
+    resetFont() { this.fontSize = this._defaultFontSize; this._applyFont(); }
+    _applyFont() {
+        this.tabs.forEach(t => t.panes().forEach(p => { p.term.options.fontSize = this.fontSize; p.fit(); }));
+        try { window.dyo.settings.set({ termFontSize: this.fontSize }); } catch (e) {}
+    }
+
+    // ---- directional pane navigation (nearest neighbour in the arrow direction) ----
+    focusDir(dir) {
+        const tab = this.activeTab();
+        if (!tab) return;
+        const panes = tab.panes();
+        if (panes.length < 2 || !tab.focused) return;
+        const cr = tab.focused.el.getBoundingClientRect();
+        const cx = cr.left + cr.width / 2, cy = cr.top + cr.height / 2;
+        let best = null, bestScore = Infinity;
+        panes.forEach(p => {
+            if (p === tab.focused) return;
+            const r = p.el.getBoundingClientRect();
+            const dx = (r.left + r.width / 2) - cx, dy = (r.top + r.height / 2) - cy;
+            let ok, primary, secondary;
+            if (dir === "left")       { ok = dx < -1; primary = -dx; secondary = Math.abs(dy); }
+            else if (dir === "right") { ok = dx > 1;  primary = dx;  secondary = Math.abs(dy); }
+            else if (dir === "up")    { ok = dy < -1; primary = -dy; secondary = Math.abs(dx); }
+            else                      { ok = dy > 1;  primary = dy;  secondary = Math.abs(dx); }
+            if (!ok) return;
+            const score = primary + secondary * 2;   // prefer aligned + nearest
+            if (score < bestScore) { bestScore = score; best = p; }
+        });
+        if (best) { this.focusPane(best); best.focus(); }
+    }
+
+    // ---- keyboard pane resize: nudge the nearest matching-axis split by ~3% ----
+    resizeFocused(dir) {
+        const tab = this.activeTab();
+        if (!tab || !tab.focused) return;
+        const wantDir = (dir === "left" || dir === "right") ? "vertical" : "horizontal";
+        let node = tab._findLeaf(tab.root, tab.focused);
+        if (!node) return;
+        let parent = tab._findParent(tab.root, node);
+        let split = null, fromA = false;
+        while (parent) {
+            if (parent.dir === wantDir) { split = parent; fromA = parent.a === node; break; }
+            node = parent;
+            parent = tab._findParent(tab.root, node);
+        }
+        if (!split) return;
+        const sizes = split.sizes || [0.5, 0.5];
+        const grow = (dir === "right" || dir === "down");   // grow the focused pane
+        let ratio = sizes[0] + (grow ? 1 : -1) * (fromA ? 1 : -1) * 0.03;
+        ratio = Math.min(0.9, Math.max(0.1, ratio));
+        split.sizes = [ratio, 1 - ratio];
+        tab._mount();
+        if (tab.focused) tab.focused.focus();
+    }
+
+    // ---- search (Enter/Shift+Enter driven by app.js; decorations highlight all) ----
+    _searchOptions(extra) {
+        return Object.assign({
+            regex: false, caseSensitive: false,
+            decorations: {
+                matchBackground: "#2f4a6b",
+                matchBorder: "#4fd2ff",
+                matchOverviewRuler: "#4fd2ff",
+                activeMatchBackground: "#ffb547",
+                activeMatchBorder: "#ffd089",
+                activeMatchColorOverviewRuler: "#ffb547"
+            }
+        }, extra || {});
+    }
+    searchNext(query, incremental) {
+        const p = this.activeTab() && this.activeTab().focused;
+        if (!p) return;
+        if (!query) { p.searchAddon.clearDecorations(); return; }
+        p.searchAddon.findNext(query, this._searchOptions({ incremental: !!incremental }));
+    }
+    searchPrev(query) {
+        const p = this.activeTab() && this.activeTab().focused;
+        if (p && query) p.searchAddon.findPrevious(query, this._searchOptions());
+    }
+    searchClear() {
+        const p = this.activeTab() && this.activeTab().focused;
+        if (p) p.searchAddon.clearDecorations();
+    }
+    search(query) { this.searchNext(query); }
 
     // Type a command into the focused terminal (used by the macros widget)
     runInFocused(cmd) {
@@ -378,6 +645,37 @@ class TerminalManager {
 
 function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m]));
+}
+
+// Multiline / large paste confirmation. Previews the text (truncated) before it
+// reaches the shell, so a stray clipboard full of commands can't auto-run.
+function showPasteGuard(text, onConfirm) {
+    const t = k => (window.I18N ? window.I18N.t(k) : k);
+    const lines = text.split("\n").length;
+    const preview = text.length > 2000 ? text.slice(0, 2000) + "\n…" : text;
+    const overlay = document.createElement("div");
+    overlay.className = "overlay paste-guard open";
+    overlay.innerHTML = `
+        <div class="dialog paste-dialog">
+            <h2>${escapeHtml(t("paste.title"))}</h2>
+            <div class="paste-meta">${escapeHtml(t("paste.warn").replace("{lines}", lines).replace("{chars}", text.length))}</div>
+            <pre class="paste-preview">${escapeHtml(preview)}</pre>
+            <div class="paste-actions">
+                <button class="pg-cancel">${escapeHtml(t("paste.cancel"))}</button>
+                <button class="pg-ok">${escapeHtml(t("paste.confirm"))}</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector(".pg-cancel").onclick = close;
+    overlay.querySelector(".pg-ok").onclick = () => { close(); onConfirm(); };
+    overlay.addEventListener("mousedown", e => { if (e.target === overlay) close(); });
+    overlay.addEventListener("keydown", e => {
+        e.stopPropagation();
+        if (e.key === "Escape") { e.preventDefault(); close(); }
+        else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); close(); onConfirm(); }
+    });
+    overlay.querySelector(".pg-ok").focus();
 }
 
 window.TerminalManager = TerminalManager;

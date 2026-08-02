@@ -10,9 +10,9 @@ window.WIDGETS = window.WIDGETS || {};
 
     // parse human size like "1.2G", "512K", "4.0K", "2M", "512B" -> bytes
     const toBytes = s => {
-        const m = /^([\d.]+)\s*([KMGTP]?)i?B?$/i.exec(s.trim());
+        const m = /^([\d]+(?:[.,]\d+)?)\s*([KMGTP]?)i?B?$/i.exec(s.trim());
         if (!m) return 0;
-        const n = parseFloat(m[1]) || 0;
+        const n = parseFloat(m[1].replace(",", ".")) || 0;
         const u = (m[2] || "").toUpperCase();
         const mult = { "": 1, K: 1024, M: 1024 ** 2, G: 1024 ** 3, T: 1024 ** 4, P: 1024 ** 5 }[u] || 1;
         return n * mult;
@@ -44,7 +44,7 @@ window.WIDGETS = window.WIDGETS || {};
                     $("#_sxd_msg").textContent = cwd ? cwd : "";
                     // du -sh */ needs shell glob; pass explicit dir list not available, so use argv "*/" won't expand.
                     // Use du -sh with depth via -d 1 on cwd itself, then filter to subdirs.
-                    const res = await window.dyo.exec("du", ["-sh", "-d", "1", "."], { cwd, timeout: 10000 });
+                    const res = await window.dyo.exec("du", ["-h", "-d", "1", "."], { cwd, timeout: 10000 });
                     if (!res || res.code !== 0 || !res.stdout) {
                         $("#_sxd_body").innerHTML = `<div style="color:var(--text-dim)">${esc((res && res.stderr) ? res.stderr.split("\n")[0] : "du unavailable")}</div>`;
                         return;

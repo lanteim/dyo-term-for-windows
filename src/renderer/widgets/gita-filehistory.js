@@ -12,6 +12,7 @@ window.WIDGETS.gita_filehistory = {
     defaultSize: { w: 10, h: 5 },
     mount(body) {
         const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m]));
+        const shq = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
         body.innerHTML = `
             <div style="display:flex;gap:6px;margin-bottom:6px">
                 <input id="_gfh_in" type="text" placeholder="path/to/file" style="flex:1;background:var(--bg-elevated);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:12px;font-family:var(--font-mono)" />
@@ -56,7 +57,7 @@ window.WIDGETS.gita_filehistory = {
                 out.querySelectorAll("._gfh_row").forEach(r => {
                     r.onclick = () => {
                         const h = r.getAttribute("data-h");
-                        if (h && window.term && window.term.runInFocused) window.term.runInFocused("git show " + h + " -- " + JSON.stringify(file) + "\n");
+                        if (h && window.term && window.term.runInFocused) window.term.runInFocused("git show " + h + " -- " + shq(file) + "\n");
                     };
                 });
             } catch (e) {

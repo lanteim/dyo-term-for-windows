@@ -69,7 +69,8 @@ window.WIDGETS.extra_ollama = {
             if (!model) { $("._st").textContent = "no model selected"; return; }
             if (!prompt) { $("._st").textContent = "empty prompt"; return; }
             const safe = prompt.replace(/'/g, "'\\''");
-            window.term.runInFocused(`ollama run ${model} '${safe}'\n`);
+            const safeModel = model.replace(/'/g, "'\\''");
+            window.term.runInFocused(`ollama run '${safeModel}' '${safe}'\n`);
             $("._st").textContent = "sent to terminal";
         };
         load();
