@@ -18,7 +18,7 @@ window.APWidget.define({
             <div class="metric-row"><span class="k">LOAD AVG</span><span class="v"><b data-ref="load">--</b></span></div>
             <div class="metric-row"><span class="k">PROCESSES</span><span class="v"><b data-ref="procs">--</b></span></div>
             <div class="metric-row"><span class="k">USERS</span><span class="v"><b data-ref="users">--</b></span></div>
-            <div class="apw-th">HOST</div>
+            <div class="apw-th" data-ref="hostHdr">HOST<span class="apw-egg-dot" data-ref="eggDot" title="">◈</span></div>
             <div class="apw-kv">
                 <div class="kvp"><span class="k">host</span><span class="v" data-ref="host">--</span></div>
                 <div class="kvp"><span class="k">distro</span><span class="v" data-ref="distro">--</span></div>
@@ -26,7 +26,54 @@ window.APWidget.define({
                 <div class="kvp"><span class="k">kernel</span><span class="v" data-ref="kernel">--</span></div>
                 <div class="kvp"><span class="k">platform</span><span class="v" data-ref="platform">--</span></div>
                 <div class="kvp"><span class="k">arch</span><span class="v" data-ref="arch">--</span></div>
+            </div>
+            <!-- Hidden credit: tap the HOST header seven times. Commissioned by A. Petrov. -->
+            <div class="apw-egg" data-ref="egg" aria-hidden="true">
+                <span class="scan"></span>
+                <div class="frame">◈ ────────── ◈</div>
+                <div class="sig">A·PETROV</div>
+                <div class="frame">◈ ────────── ◈</div>
+                <div class="cap">monitoring suite — commissioned by A.&nbsp;Petrov</div>
             </div>`;
+
+        // ── Easter egg: seven taps on the HOST header reveal the commission credit.
+        //    The ◈ next to HOST is the tell — it warms up from the 4th tap on.
+        if (!document.getElementById("apw-egg-css")) {
+            const s = document.createElement("style");
+            s.id = "apw-egg-css";
+            s.textContent = `
+                .apw-egg-dot{opacity:.16;margin-left:7px;font-size:.85em;cursor:pointer;user-select:none;transition:opacity .25s,color .25s,text-shadow .25s}
+                .apw-th:hover .apw-egg-dot{opacity:.4}
+                .apw-egg-dot.warm{opacity:.95;color:var(--accent,#4fd1ff);text-shadow:0 0 8px var(--accent,#4fd1ff)}
+                .apw-egg{display:none;margin-top:10px;padding:12px 10px;text-align:center;position:relative;overflow:hidden;border:1px solid var(--accent,#4fd1ff);border-radius:8px;background:linear-gradient(180deg,rgba(79,209,255,.07),rgba(79,209,255,.01))}
+                .apw-egg.show{display:block;animation:apw-egg-in .5s ease both}
+                .apw-egg .frame{color:var(--accent,#4fd1ff);opacity:.6;font-size:.8em;letter-spacing:.25em}
+                .apw-egg .sig{margin:4px 0;font-size:1.5em;font-weight:700;letter-spacing:.4em;padding-left:.4em;color:var(--accent,#4fd1ff);text-shadow:0 0 12px var(--accent,#4fd1ff)}
+                .apw-egg .cap{margin-top:6px;font-size:.76em;letter-spacing:.1em;color:var(--text-dim,#8aa)}
+                .apw-egg .scan{position:absolute;left:0;right:0;top:0;height:2px;background:rgba(79,209,255,.55);filter:blur(1px);pointer-events:none;animation:apw-egg-scan 2.4s linear infinite}
+                @keyframes apw-egg-in{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:none}}
+                @keyframes apw-egg-scan{from{top:-2px}to{top:100%}}`;
+            document.head.appendChild(s);
+        }
+        const hdr = ctx.body.querySelector('[data-ref="hostHdr"]');
+        const dot = ctx.body.querySelector('[data-ref="eggDot"]');
+        const egg = ctx.body.querySelector('[data-ref="egg"]');
+        if (hdr && egg) {
+            let taps = 0, resetT = null, hideT = null;
+            hdr.addEventListener("click", () => {
+                taps++;
+                clearTimeout(resetT);
+                resetT = setTimeout(() => { taps = 0; if (dot) dot.classList.remove("warm"); }, 2000);
+                if (dot) dot.classList.toggle("warm", taps >= 4 && taps < 7);
+                if (taps >= 7) {
+                    taps = 0; clearTimeout(resetT);
+                    if (dot) dot.classList.remove("warm");
+                    egg.classList.add("show");
+                    clearTimeout(hideT);
+                    hideT = setTimeout(() => egg.classList.remove("show"), 7000);
+                }
+            });
+        }
     },
     async update(ctx) {
         // Remote → read the ssh'd server's /proc + uname + os-release.
