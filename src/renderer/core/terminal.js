@@ -14,6 +14,7 @@ class TerminalPane {
         this._disposed = false;
         this._spawnCwd = opts.cwd || null;   // restored cwd for reopened tabs
         this.paneCwd = opts.cwd || null;      // last known cwd, tracked by the poll
+        this.oscTitle = null;                 // title the shell/program sets (OSC 0/2)
         this.el = document.createElement("div");
         this.el.className = "pane";
         this.host = document.createElement("div");
@@ -55,6 +56,20 @@ class TerminalPane {
                 this.term.unicode.activeVersion = "11";
             }
         } catch (e) { /* unicode addon optional */ }
+
+        // Keep scrollback across `clear` / reset. `clear` (and some Ctrl+L bindings)
+        // emit ESC[3J = "erase scrollback"; swallow just that so, like iTerm, clearing
+        // the screen doesn't throw away the history you may want to scroll back to.
+        // ED 0/1/2 (erase in display) still run normally.
+        try {
+            this.term.parser.registerCsiHandler({ final: "J" }, (params) => params[0] === 3);
+        } catch (e) { /* parser API optional */ }
+
+        // Tab label follows the title the shell/program sets (OSC 0/2), like iTerm.
+        this.term.onTitleChange((t) => {
+            this.oscTitle = (t || "").trim() || null;
+            this.manager.updateTitle();
+        });
 
         this.el.addEventListener("mousedown", () => manager.focusPane(this), true);
         // Origin keystrokes go to this pty; broadcast mode mirrors them to siblings.
@@ -118,6 +133,30 @@ class TerminalPane {
             if (text) this.manager.guardedPaste(this, text);
         }, true);
 
+        // Scrollback wheel scrolling. xterm 6's overlay scroller doesn't reliably
+        // catch the wheel over the WebGL canvas, so drive scrollback ourselves in the
+        // normal buffer (the alt buffer belongs to vim/less/htop, which get the wheel
+        // forwarded by xterm). Capture phase + stopPropagation → no double scroll.
+        this.host.addEventListener("wheel", (e) => {
+            if (this.term.buffer.active.type !== "normal") return; // alt buffer → let xterm/app handle
+            if (e.ctrlKey || e.metaKey) return;                    // reserved combos (zoom, etc.)
+            e.preventDefault();
+            e.stopPropagation();
+            let lines;
+            if (e.deltaMode === 1) lines = e.deltaY;                       // DOM_DELTA_LINE
+            else if (e.deltaMode === 2) lines = e.deltaY * this.term.rows; // DOM_DELTA_PAGE
+            else {                                                         // DOM_DELTA_PIXEL — accumulate for smooth trackpad
+                const cell = (this.term._core && this.term._core._renderService
+                    && this.term._core._renderService.dimensions.css.cell.height) || 18;
+                this._wheelPx = (this._wheelPx || 0) + e.deltaY;
+                const whole = this._wheelPx < 0 ? Math.ceil(this._wheelPx / cell) : Math.floor(this._wheelPx / cell);
+                this._wheelPx -= whole * cell;
+                lines = whole;
+            }
+            const n = lines < 0 ? Math.floor(lines) : Math.ceil(lines);
+            if (n) this.term.scrollLines(n);
+        }, { capture: true, passive: false });
+
         this._ro = new ResizeObserver(() => this.fit());
         this._ro.observe(this.host);
 
@@ -141,12 +180,12 @@ class TerminalPane {
         this._cwdTimer = setInterval(async () => {
             if (!this.id) return;
             const cwd = await window.dyo.pty.cwd(this.id);
-            if (cwd) this.paneCwd = cwd;   // per-pane cwd, used when reopening a closed tab
-            const tab = this.manager.activeTab();
-            if (cwd && tab && tab.focused === this && cwd !== this.manager.lastCwd) {
-                this.manager.lastCwd = cwd;
-                this.manager.updateTitle();
+            if (cwd && cwd !== this.paneCwd) {
+                this.paneCwd = cwd;              // per-pane cwd (tab label + reopen)
+                if (!this.oscTitle) this.manager.updateTitle();  // refresh this tab's label
             }
+            const tab = this.manager.activeTab();
+            if (cwd && tab && tab.focused === this) this.manager.lastCwd = cwd; // spawn cwd for new panes
         }, 2000);
     }
 
@@ -344,6 +383,7 @@ class TerminalManager {
     constructor(settings) {
         this.settings = settings;
         this.lastCwd = settings.cwd;
+        this.homeDir = settings.cwd;   // shown as "~" in tab labels
         this._defaultFontSize = settings.fontSize || 14;
         const fs = settings.termFontSize;
         this.fontSize = (typeof fs === "number" && fs >= 8 && fs <= 28) ? fs : this._defaultFontSize;
@@ -437,14 +477,24 @@ class TerminalManager {
 
     updateTitle() { if (this._renaming) return; this.renderTabs(); }
 
+    // iTerm-style tab label: the title the shell/program set (OSC 0/2), else the
+    // focused pane's working-directory basename ("~" for home), else a fallback.
+    tabLabel(tab) {
+        const pane = tab.focused;
+        if (pane && pane.oscTitle) return pane.oscTitle;
+        const cwd = (pane && (pane.paneCwd || pane._spawnCwd)) || this.lastCwd || "";
+        if (this.homeDir && cwd === this.homeDir) return "~";
+        const base = String(cwd).replace(/\/+$/, "").split("/").pop();
+        return base || "shell";
+    }
+
     renderTabs() {
         this.tabsWrap.innerHTML = "";
         this.tabs.forEach((tab, idx) => {
             const el = document.createElement("div");
             el.className = "tab" + (idx === this.active ? " active" : "") + (tab.broadcast ? " broadcasting" : "");
             el.draggable = true;
-            const short = (this.lastCwd || "~").split("/").pop() || "/";
-            const title = tab.customName ? tab.customName : `${idx + 1}: ${idx === this.active ? short : "shell"}`;
+            const title = tab.customName || this.tabLabel(tab);
             el.innerHTML = `<span class="dot"></span><span class="label">${escapeHtml(title)}</span>`;
             const close = document.createElement("span");
             close.className = "close";
