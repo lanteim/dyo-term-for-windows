@@ -86,9 +86,15 @@ class TerminalPane {
                 if (isMac) return false;
             }
             if (pasteCombo) {
-                navigator.clipboard.readText().then(t => {
-                    if (t) this.manager.guardedPaste(this, t);
-                }).catch(() => {});
+                // ⌘V (mac) also fires a native `paste` event that the handler on
+                // `host` below turns into a single guarded paste — pasting here too
+                // would double it. Win/Linux Ctrl+Shift+V may not emit a paste event,
+                // so read the clipboard explicitly there.
+                if (!isMac) {
+                    navigator.clipboard.readText().then(t => {
+                        if (t) this.manager.guardedPaste(this, t);
+                    }).catch(() => {});
+                }
                 return false;
             }
             // App shortcuts (⌘… on mac, Ctrl+Shift+… on win/linux) are handled by
@@ -101,14 +107,15 @@ class TerminalPane {
             return true;
         });
 
-        // Context-menu / middle-click paste also flows through the multiline guard.
+        // Single source of truth for pasting: ⌘V/Ctrl+V, context-menu and middle-click
+        // all surface here as a native `paste` event. We stop it in the capture phase —
+        // before xterm's own textarea handler — so xterm doesn't *also* paste (that
+        // double was the bug), then route the text through the multiline guard.
         this.host.addEventListener("paste", e => {
+            e.preventDefault();
+            e.stopPropagation();
             const text = e.clipboardData && e.clipboardData.getData("text");
-            if (text && (text.includes("\n") || text.length > 1500)) {
-                e.preventDefault();
-                e.stopPropagation();
-                this.manager.guardedPaste(this, text);
-            }
+            if (text) this.manager.guardedPaste(this, text);
         }, true);
 
         this._ro = new ResizeObserver(() => this.fit());
@@ -540,6 +547,12 @@ class TerminalManager {
     // ---- multiline / large paste guard ----
     guardedPaste(pane, text) {
         if (!text) return;
+        // A single user paste can surface through more than one event path (the
+        // keydown handler and the native paste event); collapse identical text within
+        // a short window so it reaches the shell exactly once.
+        const now = (window.performance && performance.now) ? performance.now() : Date.now();
+        if (this._lastPaste && this._lastPaste.text === text && now - this._lastPaste.t < 80) return;
+        this._lastPaste = { text, t: now };
         if (!(text.includes("\n") || text.length > 1500)) { pane.term.paste(text); return; }
         showPasteGuard(text, () => { pane.term.paste(text); pane.focus(); });
     }
