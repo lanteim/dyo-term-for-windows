@@ -77,7 +77,7 @@ window.WIDGETS.o2_netdata = {
                 $("#_dot").style.color = cr > 0 ? "var(--danger)" : w > 0 ? "#d29922" : "#3fb950";
                 $("#_host").textContent = j.hostname || j.mirrored_hosts && j.mirrored_hosts[0] || "netdata";
                 $("#_ver").textContent = "v" + (j.version || "?") + (j.os_name ? " · " + j.os_name : "");
-                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_dot").style.color = "var(--danger)"; $("#_host").textContent = "error"; $("#_ver").textContent = (e && e.message) || ""; }
             } finally { busy = false; }

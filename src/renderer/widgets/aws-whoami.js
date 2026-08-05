@@ -55,7 +55,7 @@ window.WIDGETS.aws_whoami = {
                 $("#_aw_uid").title = j.UserId || "";
                 $("#_aw_arn").textContent = j.Arn || "—";
                 $("#_aw_arn").title = j.Arn || "";
-                $("#_aw_meta").textContent = new Date().toLocaleTimeString();
+                $("#_aw_meta").textContent = new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_aw_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`; $("#_aw_meta").textContent = ""; }
             } finally { busy = false; }

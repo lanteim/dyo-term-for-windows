@@ -85,7 +85,7 @@ window.WIDGETS.tool_cron = {
                     dom.has(d.getDate()) && dow.has(d.getDay())) { found = new Date(d); break; }
                 d.setMinutes(d.getMinutes() + 1);
             }
-            cnext.textContent = found ? "Next run ≈ " + found.toLocaleString() : "No run within 1 year";
+            cnext.textContent = found ? "Next run ≈ " + found.toLocaleString(window.I18N.locale()) : "No run within 1 year";
         };
         cin.oninput = run;
         run();

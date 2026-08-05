@@ -79,7 +79,7 @@ window.WIDGETS.msg_linear = {
                     list.appendChild(div);
                 });
                 if (!nodes.length) list.innerHTML = `<span style="color:var(--accent2)">no open issues assigned to you</span>`;
-                $("#_ln_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_ln_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_ln_list").innerHTML = `<span style="color:var(--danger)">${esc(e && e.message)}</span>`;
             } finally { busy = false; }

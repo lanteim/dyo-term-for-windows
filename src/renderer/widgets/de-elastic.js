@@ -87,7 +87,7 @@ window.WIDGETS.de_elastic = {
                     const size = i["store.size"] ? (Number(i["store.size"]) / 1048576).toFixed(1) + "M" : "";
                     return `<div style="display:flex;gap:8px;padding:3px 8px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="color:${hc(i.health)}">●</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(i.index)}</span><span style="color:var(--text-dim)">${esc(docs)} docs</span><span style="color:var(--text-dim);width:52px;text-align:right">${esc(size)}</span></div>`;
                 }).join("");
-                $("#_es_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_es_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_es_list").innerHTML = `<div style="padding:8px;color:var(--danger)">${esc(e && e.message)}</div>`;
             } finally { busy = false; }

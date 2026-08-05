@@ -73,7 +73,7 @@ window.WIDGETS.vpn = {
                 } else {
                     items.slice(0, 50).forEach(el => list.appendChild(el));
                 }
-                if (alive) $("#_vpn_meta").textContent = new Date().toLocaleTimeString();
+                if (alive) $("#_vpn_meta").textContent = new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 list.innerHTML = `<div style="color:var(--danger)">Error: ${esc(e && e.message)}</div>`;
             } finally { busy = false; }

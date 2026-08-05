@@ -42,11 +42,11 @@ window.WIDGETS.tx2_repeat = {
             const total = src.length * n + sep.length * (n - 1);
             if (total > MAX) {
                 out.value = "";
-                msg.innerHTML = `<span style="color:var(--danger)">too large (${total.toLocaleString()} chars, max ${MAX.toLocaleString()})</span>`;
+                msg.innerHTML = `<span style="color:var(--danger)">too large (${total.toLocaleString(window.I18N.locale())} chars, max ${MAX.toLocaleString(window.I18N.locale())})</span>`;
                 return;
             }
             out.value = Array(n).fill(src).join(sep);
-            msg.innerHTML = `<span style="color:var(--text-dim)">${out.value.length.toLocaleString()} chars</span>`;
+            msg.innerHTML = `<span style="color:var(--text-dim)">${out.value.length.toLocaleString(window.I18N.locale())} chars</span>`;
         };
         const copy = () => { if (out.value) { navigator.clipboard.writeText(out.value); msg.innerHTML = `<span style="color:var(--accent)">copied</span>`; } };
 

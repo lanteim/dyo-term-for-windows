@@ -120,7 +120,7 @@ window.WIDGETS.mac_bluetooth = {
                     renderDevices(res.devices, false);
                     $("#_bt_msg").innerHTML = `<span style="color:var(--text-dim)">via ${src}</span>`;
                 }
-                $("#_bt_meta").textContent = new Date().toLocaleTimeString();
+                $("#_bt_meta").textContent = new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_bt_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`; $("#_bt_meta").textContent = ""; }
             } finally { busy = false; }

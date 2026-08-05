@@ -65,7 +65,7 @@ window.WIDGETS.iac_tfplan = {
                     $("#_tp_verdict").textContent = "completed (unparsed summary)";
                 }
                 $("#_tp_out").textContent = out.split("\n").slice(-60).join("\n");
-                $("#_tp_st").textContent = "done " + new Date().toLocaleTimeString();
+                $("#_tp_st").textContent = "done " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_tp_st").textContent = "error"; $("#_tp_out").textContent = String(e && e.message); }
             } finally { busy = false; }

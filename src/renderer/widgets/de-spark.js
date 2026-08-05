@@ -79,7 +79,7 @@ window.WIDGETS.de_spark = {
                 else $("#_sp_list").innerHTML = all.slice(0, 200).map(a =>
                     `<div style="display:flex;gap:8px;padding:3px 8px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="color:${stCol(a.state)}">●</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(a.name || a.id || "?")}</span><span style="color:var(--text-dim);width:70px;text-align:right">${esc(a.cores != null ? a.cores + " cores" : (a.state || ""))}</span></div>`
                 ).join("");
-                $("#_sp_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_sp_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_sp_list").innerHTML = `<div style="padding:8px;color:var(--danger)">${esc(e && e.message)}</div>`;
             } finally { busy = false; }

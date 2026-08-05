@@ -45,7 +45,7 @@ window.WIDGETS.web_jwt = {
             if (typeof ts !== "number") return "";
             const d = new Date(ts * 1000);
             if (isNaN(d.getTime())) return "";
-            return d.toLocaleString();
+            return d.toLocaleString(window.I18N.locale());
         };
 
         const decode = () => {

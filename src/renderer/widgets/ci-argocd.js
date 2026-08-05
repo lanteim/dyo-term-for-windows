@@ -100,7 +100,7 @@ window.WIDGETS.ci_argocd = {
                         <td style="padding:2px 6px;color:var(--text-dim)">${esc(proj)}</td></tr>`;
                 }).join("");
                 $("#_ar_sum").innerHTML = `<span style="color:var(--accent2)">${synced} synced</span> / <span style="color:var(--accent2)">${healthy} healthy</span> of ${items.length}`;
-                $("#_ar_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_ar_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_ar_rows").innerHTML = `<tr><td colspan="4" style="padding:4px 6px;color:var(--danger)">${esc(e && e.message)}</td></tr>`;
             } finally { busy = false; }

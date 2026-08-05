@@ -61,7 +61,7 @@ window.WIDGETS.k8x_logs = {
                 const atBottom = pre.scrollHeight - pre.scrollTop - pre.clientHeight < 30;
                 pre.textContent = (r.stdout || "").replace(/\s+$/, "") || "(no output)";
                 if (atBottom) pre.scrollTop = pre.scrollHeight;
-                $("#_kl_meta").textContent = (ns ? ns + "/" : "") + pod + " · " + new Date().toLocaleTimeString();
+                $("#_kl_meta").textContent = (ns ? ns + "/" : "") + pod + " · " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) pre.textContent = "error: " + esc(e && e.message);
             } finally { busy = false; }

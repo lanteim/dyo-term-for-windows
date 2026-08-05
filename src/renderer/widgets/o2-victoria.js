@@ -80,7 +80,7 @@ window.WIDGETS.o2_victoria = {
                     const vc = val === "1" ? "#3fb950" : val === "0" ? "var(--danger)" : "var(--text)";
                     return `<div style="display:flex;gap:8px;padding:3px 8px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(name)}{${esc(rest)}}</span><span style="color:${vc};width:70px;text-align:right">${esc(val)}</span></div>`;
                 }).join("");
-                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_list").innerHTML = `<div style="padding:8px;color:var(--danger)">${esc(e && e.message)}</div>`;
             } finally { busy = false; }

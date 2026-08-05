@@ -18,8 +18,8 @@ window.WIDGETS.clock = {
         const d = body.querySelector("#_clk_d");
         const tick = () => {
             const now = new Date();
-            t.textContent = now.toLocaleTimeString([], { hour12: false });
-            d.textContent = now.toLocaleDateString([], { weekday: "long", day: "numeric", month: "short", year: "numeric" });
+            t.textContent = now.toLocaleTimeString(window.I18N.locale(), { hour12: false });
+            d.textContent = now.toLocaleDateString(window.I18N.locale(), { weekday: "long", day: "numeric", month: "short", year: "numeric" });
         };
         tick();
         const iv = setInterval(tick, 1000);

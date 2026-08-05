@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process"; import fs from "node:fs"; import path from "node:path"; import WebSocket from "ws";
+import { spawn, execSync } from "node:child_process"; import fs from "node:fs"; import path from "node:path"; import WebSocket from "ws";
 const appDir="/Users/lantis/cmd-pont/dyo-term"; const ud=path.join(appDir,".smoke","split-ud"); fs.rmSync(ud,{recursive:true,force:true}); fs.mkdirSync(ud,{recursive:true});
 const app=spawn(path.join(appDir,"node_modules",".bin","electron"),[".","--remote-debugging-port=9401"],{cwd:appDir,env:{...process.env,DYOTERM_USER_DATA:ud,DYOTERM_BACKGROUND:"1",DYOTERM_NO_WEBGL:"1"},stdio:["ignore","ignore","ignore"]});
 const delay=ms=>new Promise(r=>setTimeout(r,ms)); let ws,id=0; const pend=new Map();
@@ -26,4 +26,4 @@ console.log("panes:",n);
 const shot=await cdp("Page.captureScreenshot",{format:"png"});
 fs.writeFileSync(path.join(appDir,".smoke","splits.png"),Buffer.from(shot.data,"base64"));
 console.log("wrote .smoke/splits.png");
-}catch(e){console.error("err",e.message);}finally{try{await ev(`window.dyo.win("close")`);}catch(e){}await delay(600);try{app.kill("SIGKILL");}catch(e){}process.exit(0);}
+}catch(e){console.error("err",e.message);}finally{try{await ev(`window.dyo.win("close")`);}catch(e){}await delay(600);try{app.kill("SIGKILL");}catch(e){}try{execSync('pkill -9 -f \"remote-debugging-port=9401"');}catch(e){}process.exit(0);}

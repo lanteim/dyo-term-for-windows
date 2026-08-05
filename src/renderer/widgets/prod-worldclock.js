@@ -65,7 +65,7 @@ window.WIDGETS["prod-worldclock"] = {
             listEl.querySelectorAll("span.v[data-tz]").forEach(el => {
                 const tz = el.dataset.tz;
                 try {
-                    el.textContent = new Intl.DateTimeFormat([], {
+                    el.textContent = new Intl.DateTimeFormat(window.I18N.locale(), {
                         timeZone: tz, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
                     }).format(now);
                 } catch (e) {

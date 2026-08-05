@@ -57,7 +57,7 @@ window.WIDGETS.mac_darkmode = {
                     $("#_dm_state").style.color = s === "Dark" ? "var(--accent2)" : "var(--accent)";
                     $("#_dm_msg").textContent = "";
                 }
-                $("#_dm_meta").textContent = new Date().toLocaleTimeString();
+                $("#_dm_meta").textContent = new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_dm_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`; $("#_dm_meta").textContent = ""; }
             } finally { busy = false; }

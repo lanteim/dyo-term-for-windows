@@ -1,7 +1,7 @@
 // Deep runtime test of the A.Petrov widgets: (A) local data actually populates
 // over several ticks, (B) an ssh session is detected and the remote path engages.
 // No real host is contacted (remote sim targets RFC5737 192.0.2.1).
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -87,4 +87,4 @@ try {
     console.log("\n=== console errors during test ===");
     console.log(errs.length ? errs.slice(0, 20).map(e => "  " + e).join("\n") : "  (none)");
 } catch (e) { console.error("ap-deep fatal:", e.message); }
-finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(700); try { app.kill("SIGKILL"); } catch (e) {} process.exit(0); }
+finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(700); try { app.kill("SIGKILL"); } catch (e) {} try { execSync(`pkill -9 -f \"remote-debugging-port=${PORT}"`); } catch (e) {} process.exit(0); }

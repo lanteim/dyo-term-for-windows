@@ -51,7 +51,7 @@ window.WIDGETS.iac_nomad = {
                 if (/No running jobs/i.test(out)) {
                     $("#_nm_run").textContent = "0"; $("#_nm_total").textContent = " / 0"; $("#_nm_rows").innerHTML = "";
                     $("#_nm_msg").textContent = "No jobs registered.";
-                    $("#_nm_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                    $("#_nm_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
                     return;
                 }
                 $("#_nm_msg").textContent = "";
@@ -72,7 +72,7 @@ window.WIDGETS.iac_nomad = {
                 }).join("");
                 $("#_nm_run").textContent = String(running);
                 $("#_nm_total").textContent = " / " + data.length;
-                $("#_nm_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_nm_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_nm_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`;
             } finally { busy = false; }

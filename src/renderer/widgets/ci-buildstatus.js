@@ -87,7 +87,7 @@ window.WIDGETS.ci_buildstatus = {
                     const raw = String(r.text || "").trim().slice(0, 40);
                     $("#_bs_msg").textContent = raw || "—";
                     $("#_bs_msg").style.background = guessColor(raw);
-                    $("#_bs_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                    $("#_bs_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
                     return;
                 }
                 const label = j.label || j.name || "status";
@@ -97,7 +97,7 @@ window.WIDGETS.ci_buildstatus = {
                 $("#_bs_label").textContent = String(label);
                 $("#_bs_msg").textContent = String(message);
                 $("#_bs_msg").style.background = color;
-                $("#_bs_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_bs_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_bs_err").textContent = esc(e && e.message);
             } finally { busy = false; }

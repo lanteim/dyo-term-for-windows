@@ -79,11 +79,11 @@ window.WIDGETS.de_nats = {
                     row("total conns", v.total_connections != null ? v.total_connections : "—") +
                     row("subscriptions", v.subscriptions != null ? v.subscriptions : "—") +
                     row("slow consumers", v.slow_consumers != null ? v.slow_consumers : "—") +
-                    row("in msgs", v.in_msgs != null ? Number(v.in_msgs).toLocaleString() : "—") +
-                    row("out msgs", v.out_msgs != null ? Number(v.out_msgs).toLocaleString() : "—") +
+                    row("in msgs", v.in_msgs != null ? Number(v.in_msgs).toLocaleString(window.I18N.locale()) : "—") +
+                    row("out msgs", v.out_msgs != null ? Number(v.out_msgs).toLocaleString(window.I18N.locale()) : "—") +
                     row("uptime", v.uptime || (v.uptime_seconds != null ? fmtUp(v.uptime_seconds) : "—")) +
                     row("cpu %", v.cpu != null ? v.cpu : "—");
-                $("#_nt_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_nt_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_nt_grid").innerHTML = `<div style="grid-column:1/3;color:var(--danger)">${esc(e && e.message)}</div>`;
             } finally { busy = false; }

@@ -2,7 +2,7 @@
 //   1. in edit mode every widget carries all 8 resize handles (n,e,s,w,ne,nw,se,sw),
 //   2. a real mouse drag on the WEST handle grows the widget leftwards (x-1, w+1),
 //   3. a real mouse drag on the NORTH handle shrinks it from the top (h-1).
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -94,4 +94,4 @@ try {
     check("no uncaught console errors", errs.length === 0);
     if (errs.length) console.log("errors:", errs.slice(0, 6).join(" | "));
 } catch (e) { console.error("resize-handles fatal:", e.message); pass = false; }
-finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(600); try { app.kill("SIGKILL"); } catch (e) {} console.log(pass ? "\nALL PASS" : "\nFAILED"); process.exit(pass ? 0 : 1); }
+finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(600); try { app.kill("SIGKILL"); } catch (e) {} try { execSync(`pkill -9 -f \"remote-debugging-port=${PORT}"`); } catch (e) {} console.log(pass ? "\nALL PASS" : "\nFAILED"); process.exit(pass ? 0 : 1); }

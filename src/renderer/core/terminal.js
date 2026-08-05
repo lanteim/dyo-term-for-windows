@@ -281,7 +281,11 @@ class Tab {
     }
 
     _render(node) {
-        if (node.pane) return node.pane.el;
+        // Clear any inline flex left from a previous split: when a sibling pane
+        // closes, the survivor is re-mounted as root/leaf and a stale
+        // "flex: 0.5 1 0" would beat .pane{flex:1 1 0}, freezing it at the old
+        // split ratio (half-width terminal, cols cut down with it).
+        if (node.pane) { node.pane.el.style.flex = ""; return node.pane.el; }
         const wrap = document.createElement("div");
         wrap.className = "split " + (node.dir === "horizontal" ? "horizontal" : "vertical");
         const aEl = this._render(node.a);

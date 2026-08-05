@@ -83,10 +83,10 @@ window.WIDGETS.o2_zabbix = {
                 if (!arr.length) $("#_list").innerHTML = `<div style="padding:8px;color:#3fb950">No active problems.</div>`;
                 else $("#_list").innerHTML = sorted.slice(0, 200).map(p => {
                     const sv = SEV[String(p.severity)] || ["?", "var(--text-dim)"];
-                    const t = p.clock ? new Date(Number(p.clock) * 1000).toLocaleString() : "";
+                    const t = p.clock ? new Date(Number(p.clock) * 1000).toLocaleString(window.I18N.locale()) : "";
                     return `<div style="display:flex;gap:8px;padding:3px 8px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="color:${sv[1]}">●</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span><span style="color:${sv[1]};width:70px">${esc(sv[0])}</span><span style="color:var(--text-dim);font-size:10px">${esc(t)}</span></div>`;
                 }).join("");
-                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_list").innerHTML = `<div style="padding:8px;color:var(--danger)">${esc(e && e.message)}</div>`;
             } finally { busy = false; }

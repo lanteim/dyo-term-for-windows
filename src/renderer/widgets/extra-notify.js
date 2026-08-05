@@ -75,7 +75,7 @@ window.WIDGETS.extra_notify = {
                 const state = it.fired ? "fired" : (due ? "due" : "pending");
                 const stColor = it.fired ? "var(--text-dim)" : (due ? "var(--danger)" : "var(--accent2)");
                 row.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.msg)}</span>
-                    <span style="color:var(--text-dim);font-size:11px;font-variant-numeric:tabular-nums">${when.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                    <span style="color:var(--text-dim);font-size:11px;font-variant-numeric:tabular-nums">${when.toLocaleString(window.I18N.locale(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                     <span style="color:${stColor};font-size:11px">${state}</span>`;
                 const del = document.createElement("span");
                 del.textContent = "✕"; del.title = "Remove";

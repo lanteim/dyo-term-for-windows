@@ -1,6 +1,6 @@
 // Render dyo-term at several monitor sizes/aspect ratios and screenshot each,
 // to evaluate + improve responsiveness (esp. ultrawide). Uses fake data only.
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,7 +8,7 @@ import WebSocket from "ws";
 const appDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const userData = path.join(appDir, ".smoke", "resp-ud");
 fs.rmSync(userData, { recursive: true, force: true }); fs.mkdirSync(userData, { recursive: true });
-const PORT = 9377;
+const PORT = 9379;
 const app = spawn(path.join(appDir, "node_modules", ".bin", "electron"), [".", `--remote-debugging-port=${PORT}`], {
     cwd: appDir, env: { ...process.env, DYOTERM_USER_DATA: userData, DYOTERM_BACKGROUND: "1", DYOTERM_NO_WEBGL: "1" }, stdio: ["ignore", "ignore", "ignore"]
 });
@@ -56,4 +56,4 @@ try {
     }
     console.log("shots: /tmp/resp_14in.png resp_27in-qhd.png resp_34in-uw.png resp_49in-suw.png");
 } catch (e) { console.error("responsive-shot fatal:", e.message); }
-finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(600); try { app.kill("SIGKILL"); } catch (e) {} process.exit(0); }
+finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(600); try { app.kill("SIGKILL"); } catch (e) {} try { execSync(`pkill -9 -f \"remote-debugging-port=${PORT}"`); } catch (e) {} process.exit(0); }

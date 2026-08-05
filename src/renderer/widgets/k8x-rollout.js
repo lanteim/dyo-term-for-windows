@@ -71,7 +71,7 @@ window.WIDGETS.k8x_rollout = {
                 else if (r.code !== 0 && !progressing) { setDot("var(--danger)"); }
                 else { setDot("var(--accent)"); }
                 $("#_kr_txt").textContent = msg || "(no status)";
-                $("#_kr_meta").textContent = (ns ? ns + "/" : "") + dep + " · " + new Date().toLocaleTimeString();
+                $("#_kr_meta").textContent = (ns ? ns + "/" : "") + dep + " · " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_kr_txt").textContent = "error: " + esc(e && e.message); setDot("var(--danger)"); }
             } finally { busy = false; }

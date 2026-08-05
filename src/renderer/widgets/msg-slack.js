@@ -64,7 +64,7 @@ window.WIDGETS.msg_slack = {
                 $("#_sl_team").textContent = j.team || "—";
                 $("#_sl_user").textContent = j.user || "—";
                 $("#_sl_url").textContent = j.url || "—";
-                $("#_sl_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_sl_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_sl_status").textContent = "error"; $("#_sl_status").style.color = "var(--danger)"; $("#_sl_meta").textContent = esc(e && e.message); }
             } finally { busy = false; }

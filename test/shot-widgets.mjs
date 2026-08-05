@@ -1,6 +1,6 @@
 // Screenshot a specific set of widgets (comma-separated ids in argv[2]) laid
 // out on the dashboard, for visual spot-checks. Off-screen, no focus steal.
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -28,4 +28,4 @@ try {
     fs.writeFileSync(path.join(appDir, ".smoke", outName + ".png"), Buffer.from(shot.data, "base64"));
     console.log("wrote .smoke/" + outName + ".png with:", ids.join(", "));
 } catch (e) { console.error("shot err:", e.message); }
-finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(700); try { app.kill("SIGKILL"); } catch (e) {} process.exit(0); }
+finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(700); try { app.kill("SIGKILL"); } catch (e) {} try { execSync('pkill -9 -f \"remote-debugging-port=9388"'); } catch (e) {} process.exit(0); }

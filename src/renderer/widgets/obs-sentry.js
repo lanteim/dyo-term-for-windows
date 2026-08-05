@@ -92,7 +92,7 @@ window.WIDGETS.obs_sentry = {
                     list.appendChild(div);
                 });
                 if (!arr.length) list.innerHTML = `<span style="color:var(--accent2)">no unresolved issues 🎉</span>`;
-                $("#_st_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_st_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_st_list").innerHTML = `<span style="color:var(--danger)">${esc(e && e.message)}</span>`; }
             } finally { busy = false; }

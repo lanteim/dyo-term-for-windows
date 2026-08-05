@@ -51,7 +51,7 @@ window.WIDGETS.msg_discord = {
                     $("#_dc_meta").style.color = "var(--danger)"; return;
                 }
                 $("#_dc_msg").value = "";
-                $("#_dc_meta").textContent = "sent " + new Date().toLocaleTimeString();
+                $("#_dc_meta").textContent = "sent " + new Date().toLocaleTimeString(window.I18N.locale());
                 $("#_dc_meta").style.color = "var(--accent2)";
             } catch (e) {
                 if (alive) { $("#_dc_meta").textContent = esc(e && e.message); $("#_dc_meta").style.color = "var(--danger)"; }

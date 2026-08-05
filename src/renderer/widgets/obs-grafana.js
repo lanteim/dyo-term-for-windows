@@ -83,7 +83,7 @@ window.WIDGETS.obs_grafana = {
                     list.appendChild(div);
                 });
                 if (!arr.length) list.innerHTML = `<span style="color:var(--text-dim)">no dashboards</span>`;
-                $("#_gf_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_gf_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_gf_list").innerHTML = `<span style="color:var(--danger)">${esc(e && e.message)}</span>`; }
             } finally { busy = false; }

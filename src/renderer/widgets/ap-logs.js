@@ -75,7 +75,7 @@ window.APWidget.define({
         if (res.code !== 0 && !lines.length) {
             ctx.setStatus((res.stderr || "journalctl error").split("\n")[0].slice(0, 120), "err");
         } else {
-            const meta = `${lines.length} lines · -p ${level}${unit ? " · " + unit : ""} · ${new Date().toLocaleTimeString()}`;
+            const meta = `${lines.length} lines · -p ${level}${unit ? " · " + unit : ""} · ${new Date().toLocaleTimeString(window.I18N.locale())}`;
             ctx.setStatus(meta);
         }
     },

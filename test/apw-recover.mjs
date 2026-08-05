@@ -1,7 +1,7 @@
 // Verify the notAvailable() → recovery fix: a widget that degrades on tick 1 must
 // rebuild its DOM and show data on tick 2 (mirrors ap-services/ap-logs recovering
 // after the active tab switches to an SSH host where the tool exists).
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,4 +49,4 @@ try {
     const ok = t2.includes("RECOVERED") && !t2.includes("degraded");
     console.log(ok ? "\nPASS — widget recovers from notAvailable (DOM rebuilt + refs re-bound)" : "\nFAIL — widget stuck after notAvailable");
 } catch (e) { console.error("recover fatal:", e.message); }
-finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(600); try { app.kill("SIGKILL"); } catch (e) {} process.exit(0); }
+finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(600); try { app.kill("SIGKILL"); } catch (e) {} try { execSync(`pkill -9 -f \"remote-debugging-port=${PORT}"`); } catch (e) {} process.exit(0); }

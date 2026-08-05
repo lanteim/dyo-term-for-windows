@@ -103,7 +103,7 @@ window.WIDGETS.ci_jenkins = {
                     const u = el.getAttribute("data-u"); if (u) el.onclick = () => window.dyo.openExternal(u);
                 });
                 $("#_jk_sum").innerHTML = `<span style="color:var(--accent2)">${ok}✓</span> <span style="color:var(--danger)">${fail}✗</span> <span style="color:var(--accent)">${build}◐</span> / ${jobs.length}`;
-                $("#_jk_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_jk_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_jk_list").innerHTML = `<span style="color:var(--danger)">${esc(e && e.message)}</span>`;
             } finally { busy = false; }

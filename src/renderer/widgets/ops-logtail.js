@@ -66,13 +66,13 @@ window.WIDGETS.logtail = {
                     if (!alive) return;
                     if (!r || r.code !== 0) { pre.textContent = "✗ tail failed" + (r && r.stderr ? ": " + r.stderr : ""); busy = false; return; }
                     render(r.stdout);
-                    $("#_lt_meta").textContent = "large file · tail -200 · " + (st.size / 1048576).toFixed(1) + "MB · " + new Date().toLocaleTimeString();
+                    $("#_lt_meta").textContent = "large file · tail -200 · " + (st.size / 1048576).toFixed(1) + "MB · " + new Date().toLocaleTimeString(window.I18N.locale());
                 } else {
                     const r = await window.dyo.fs.read(path, 500000).catch(() => null);
                     if (!alive) return;
                     if (!r || r.error) { pre.textContent = "✗ " + ((r && r.error) || "read failed"); busy = false; return; }
                     render(r.content || "");
-                    $("#_lt_meta").textContent = ((r.size || 0) / 1024).toFixed(0) + "KB · " + new Date().toLocaleTimeString();
+                    $("#_lt_meta").textContent = ((r.size || 0) / 1024).toFixed(0) + "KB · " + new Date().toLocaleTimeString(window.I18N.locale());
                 }
             } catch (e) {
                 if (alive) pre.textContent = "Error: " + (e && e.message);

@@ -81,7 +81,7 @@ window.WIDGETS.obs_healthcheck = {
                 const ms = Date.now() - t0;
                 if (!r || r.error) { setState(false, 0, ms, (r && r.error) || "no response"); }
                 else { setState(r.status === expect, r.status, ms); }
-                $("#_hc_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_hc_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) setState(false, 0, Date.now() - t0, e && e.message);
             } finally { busy = false; }

@@ -42,7 +42,7 @@
         },
         bps(n) { return fmt.bytes(n) + "/s"; },
         pct(n) { return (Math.round((Number(n) || 0) * 10) / 10) + "%"; },
-        num(n) { return (Number(n) || 0).toLocaleString(); },
+        num(n) { return (Number(n) || 0).toLocaleString(window.I18N.locale()); },
         duration(sec) {
             sec = Math.max(0, Math.floor(Number(sec) || 0));
             const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;

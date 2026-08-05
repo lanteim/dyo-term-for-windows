@@ -100,7 +100,7 @@ window.WIDGETS.obs_datadog = {
                     list.appendChild(div);
                 });
                 if (!alerting.length) list.innerHTML = `<span style="color:var(--accent2)">no alerting monitors 🎉</span>`;
-                $("#_dd_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_dd_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_dd_list").innerHTML = `<span style="color:var(--danger)">${esc(e && e.message)}</span>`; }
             } finally { busy = false; }

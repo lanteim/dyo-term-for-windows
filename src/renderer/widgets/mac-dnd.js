@@ -72,7 +72,7 @@ window.WIDGETS.mac_dnd = {
                     $("#_dnd_detail").textContent = "";
                     $("#_dnd_msg").innerHTML = `<span style="color:var(--text-dim)">Focus state not readable on this macOS build. Toggle via Control Center.</span>`;
                 }
-                $("#_dnd_meta").textContent = new Date().toLocaleTimeString();
+                $("#_dnd_meta").textContent = new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_dnd_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`; $("#_dnd_meta").textContent = ""; }
             } finally { busy = false; }

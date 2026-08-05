@@ -1,6 +1,6 @@
 // CDP smoke test for dyo-term. Launches in background (no focus steal),
 // verifies boot / terminal / widgets, screenshots, and reports console errors.
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -159,7 +159,7 @@ try {
 } finally {
     try { await ev(`window.dyo.win("close")`); } catch (e) {}
     await delay(1200);
-    try { app.kill("SIGKILL"); } catch (e) {}
+    try { app.kill("SIGKILL"); } catch (e) {} try { execSync(`pkill -9 -f \"remote-debugging-port=${PORT}"`); } catch (e) {}
     report.mainLog = mainLog.split("\n").slice(-40).join("\n");
     fs.writeFileSync(path.join(outDir, "report.json"), JSON.stringify(report, null, 2));
     console.log(report.ok ? "ALL PASS" : "FAILURES");

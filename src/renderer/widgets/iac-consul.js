@@ -66,7 +66,7 @@ window.WIDGETS.iac_consul = {
                 }).join("");
                 $("#_cs_alive").textContent = String(up);
                 $("#_cs_total").textContent = " / " + data.length;
-                $("#_cs_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_cs_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_cs_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`;
             } finally { busy = false; }

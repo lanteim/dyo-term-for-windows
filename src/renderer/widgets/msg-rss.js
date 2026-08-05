@@ -69,7 +69,7 @@ window.WIDGETS.msg_rss = {
                     list.appendChild(div);
                 });
                 if (!items.length) list.innerHTML = `<span style="color:var(--text-dim)">no items in feed</span>`;
-                $("#_rs_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_rs_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_rs_list").innerHTML = `<span style="color:var(--danger)">${esc(e && e.message)}</span>`;
             } finally { busy = false; }

@@ -34,11 +34,11 @@ window.WIDGETS.txt_wordcount = {
             const lines = t === "" ? 0 : t.replace(/\r\n?/g, "\n").split("\n").length;
             const bytes = enc.encode(t).length;
             const noWs = t.replace(/\s/g, "").length;
-            $("#_wc_ch").textContent = chars.toLocaleString();
-            $("#_wc_wd").textContent = words.toLocaleString();
-            $("#_wc_ln").textContent = lines.toLocaleString();
-            $("#_wc_by").textContent = bytes.toLocaleString();
-            $("#_wc_nw").textContent = noWs.toLocaleString();
+            $("#_wc_ch").textContent = chars.toLocaleString(window.I18N.locale());
+            $("#_wc_wd").textContent = words.toLocaleString(window.I18N.locale());
+            $("#_wc_ln").textContent = lines.toLocaleString(window.I18N.locale());
+            $("#_wc_by").textContent = bytes.toLocaleString(window.I18N.locale());
+            $("#_wc_nw").textContent = noWs.toLocaleString(window.I18N.locale());
         };
         inp.addEventListener("input", run);
         run();

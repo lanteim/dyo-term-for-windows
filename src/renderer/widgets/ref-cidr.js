@@ -55,8 +55,8 @@ window.WIDGETS.ref_cidr = {
                 row("Wildcard", toIp(wildcard), true) +
                 row("Broadcast", toIp(bcast), true) +
                 row("Host range", bits >= 31 ? toIp(first) + " – " + toIp(last) : toIp(first) + " – " + toIp(last), false) +
-                row("Usable hosts", usable.toLocaleString("en-US"), false) +
-                row("Total addresses", total.toLocaleString("en-US"), false) +
+                row("Usable hosts", usable.toLocaleString(window.I18N.locale()), false) +
+                row("Total addresses", total.toLocaleString(window.I18N.locale()), false) +
                 row("Scope", priv ? "Private (RFC1918)" : "Public / other", false);
             out.querySelectorAll("[data-copy]").forEach(el => {
                 el.onclick = () => navigator.clipboard.writeText(el.dataset.copy).catch(() => {});

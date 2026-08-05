@@ -1,7 +1,7 @@
 // Verify the Command History widget: (1) button logic by ROW COUNTS only (never
 // reads the user's actual command text), (2) visual readability by injecting
 // MY OWN fake rows into the real widget DOM/CSS and screenshotting.
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -70,4 +70,4 @@ try {
     console.log(ok ? "\nBUTTON LOGIC OK" : "\nLOGIC FAILED");
     console.log("demo screenshot (fake data): /tmp/ch_demo.png  rect=" + JSON.stringify(rect));
 } catch (e) { console.error("ch-shot fatal:", e.message); }
-finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(600); try { app.kill("SIGKILL"); } catch (e) {} process.exit(0); }
+finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(600); try { app.kill("SIGKILL"); } catch (e) {} try { execSync(`pkill -9 -f \"remote-debugging-port=${PORT}"`); } catch (e) {} process.exit(0); }

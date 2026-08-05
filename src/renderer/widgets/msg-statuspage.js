@@ -62,7 +62,7 @@ window.WIDGETS.msg_statuspage = {
                     list.appendChild(row);
                 });
                 if (!comps.length) list.innerHTML = `<span style="color:var(--text-dim)">no components reported</span>`;
-                $("#_sp_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_sp_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_sp_list").innerHTML = `<span style="color:var(--danger)">${esc(e && e.message)}</span>`;
             } finally { busy = false; }

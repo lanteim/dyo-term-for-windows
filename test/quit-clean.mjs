@@ -3,13 +3,14 @@
 // the env is being torn down). Boots the app with several live ptys, quits via
 // the normal window-close path, and asserts a clean exit — several rounds,
 // since the teardown race is timing-dependent.
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import WebSocket from "ws";
 const appDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = 9405;
+const reap = () => { try { execSync(`pkill -9 -f \"remote-debugging-port=${PORT}"`); } catch (e) {} };
 const ROUNDS = 5;
 const delay = ms => new Promise(r => setTimeout(r, ms));
 let pass = true;
@@ -43,13 +44,13 @@ async function round(n) {
         try { ws.close(); } catch (e) {}
     } catch (e) {
         console.error(`round ${n}: harness error:`, e.message);
-        try { app.kill("SIGKILL"); } catch (err) {}
+        try { app.kill("SIGKILL"); } catch (err) {} reap();
         check(`round ${n} clean exit`, false, "harness error");
         return;
     }
     const result = await Promise.race([exited, delay(15000).then(() => null)]);
     if (!result) {
-        try { app.kill("SIGKILL"); } catch (e) {}
+        try { app.kill("SIGKILL"); } catch (e) {} reap();
         await exited;
         check(`round ${n} clean exit`, false, "hang on quit (15s)");
         return;

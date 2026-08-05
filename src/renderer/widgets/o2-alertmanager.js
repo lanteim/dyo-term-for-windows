@@ -76,7 +76,7 @@ window.WIDGETS.o2_alertmanager = {
                     const inst = (a.labels && (a.labels.instance || a.labels.namespace)) || "";
                     return `<div style="display:flex;gap:8px;padding:3px 8px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="color:${sevColor(sv)}">●</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(name)}</span><span style="color:${sevColor(sv)};width:64px">${esc(sv)}</span><span style="color:var(--text-dim);max-width:35%;overflow:hidden;text-overflow:ellipsis">${esc(inst)}</span></div>`;
                 }).join("");
-                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_list").innerHTML = `<div style="padding:8px;color:var(--danger)">${esc(e && e.message)}</div>`;
             } finally { busy = false; }

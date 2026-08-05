@@ -59,7 +59,7 @@ window.WIDGETS.mac_audiodev = {
                 $("#_aud_mute").textContent = (typeof mu === "boolean") ? (mu ? "yes" : "no") : String(mu);
                 $("#_aud_inp").textContent = isNaN(iv) ? "—" : iv + "%";
                 $("#_aud_msg").textContent = "";
-                $("#_aud_meta").textContent = new Date().toLocaleTimeString();
+                $("#_aud_meta").textContent = new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_aud_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`; $("#_aud_meta").textContent = ""; }
             } finally { busy = false; }

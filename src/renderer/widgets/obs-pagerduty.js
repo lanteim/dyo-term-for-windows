@@ -82,7 +82,7 @@ window.WIDGETS.obs_pagerduty = {
                     list.appendChild(div);
                 });
                 if (!arr.length) list.innerHTML = `<span style="color:var(--accent2)">no triggered incidents 🎉</span>`;
-                $("#_pd_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_pd_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_pd_list").innerHTML = `<span style="color:var(--danger)">${esc(e && e.message)}</span>`; }
             } finally { busy = false; }

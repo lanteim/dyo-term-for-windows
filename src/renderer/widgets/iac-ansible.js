@@ -72,7 +72,7 @@ window.WIDGETS.iac_ansible = {
                 if (!groups.length && allHosts.size) {
                     list.innerHTML = `<div style="color:var(--text-dim)">${Array.from(allHosts).slice(0, 60).map(esc).join("<br>")}</div>`;
                 }
-                $("#_an_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_an_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_an_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`;
             } finally { busy = false; }

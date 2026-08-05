@@ -34,7 +34,7 @@ window.WIDGETS.enc_entropy = {
             if (sec > 31557600 * 1000) {
                 const yrs = sec / 31557600;
                 if (yrs > 1e12) return yrs.toExponential(1) + " yr";
-                return Math.round(yrs).toLocaleString() + " yr";
+                return Math.round(yrs).toLocaleString(window.I18N.locale()) + " yr";
             }
             for (const [name, s] of u) { if (sec >= s) { const n = Math.floor(sec / s); return n + " " + name + (n !== 1 ? "s" : ""); } }
             return "instant";

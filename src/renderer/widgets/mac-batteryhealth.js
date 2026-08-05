@@ -75,7 +75,7 @@ window.WIDGETS.mac_batteryhealth = {
 
                 $("#_bh_now").textContent = chargeNow ? (/%/.test(String(chargeNow)) || parseInt(chargeNow, 10) <= 100 && !full ? chargeNow + (/%/.test(String(chargeNow)) ? "" : "%") : chargeNow + " mAh") + (charging ? " · charging" : "") : (charging ? "charging" : "—");
                 if (cond || cycles) $("#_bh_msg").textContent = "";
-                $("#_bh_meta").textContent = new Date().toLocaleTimeString();
+                $("#_bh_meta").textContent = new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_bh_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`; $("#_bh_meta").textContent = ""; }
             } finally { busy = false; }

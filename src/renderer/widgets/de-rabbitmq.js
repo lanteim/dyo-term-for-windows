@@ -85,7 +85,7 @@ window.WIDGETS.de_rabbitmq = {
                     const col = total > 0 ? "var(--accent2)" : "var(--text-dim)";
                     return `<div style="display:flex;gap:8px;padding:3px 8px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(q.name)}</span><span style="color:${col};width:60px;text-align:right">${total}</span><span style="color:var(--text-dim);width:70px;text-align:right">${unack} un</span></div>`;
                 }).join("");
-                $("#_rq_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_rq_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_rq_list").innerHTML = `<div style="padding:8px;color:var(--danger)">${esc(e && e.message)}</div>`;
             } finally { busy = false; }

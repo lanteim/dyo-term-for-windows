@@ -94,7 +94,7 @@ window.WIDGETS.iac_vault = {
                 $("#_vt_ver").textContent = j.version || "—";
                 $("#_vt_cluster").textContent = j.cluster_name || "—";
                 $("#_vt_cluster").title = j.cluster_name || "";
-                $("#_vt_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_vt_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_vt_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`;
             } finally { busy = false; }

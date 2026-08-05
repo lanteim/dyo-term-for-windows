@@ -237,6 +237,12 @@ window.I18N = {
         return (key in l) ? l[key] : (this.dict.en[key] != null ? this.dict.en[key] : key);
     },
 
+    // BCP-47 tag for Intl date/number DISPLAY formatting, so formatted output
+    // follows the app language instead of the OS locale. Not for data keys —
+    // stable machine formats (e.g. en-CA YYYY-MM-DD storage keys) must keep
+    // their hardcoded locale.
+    locale() { return this.lang === "ru" ? "ru-RU" : "en-US"; },
+
     // Widgets self-register their strings so parallel widget files never touch
     // this shared dictionary directly. pack = { en: {...}, ru: {...} }
     register(pack) {

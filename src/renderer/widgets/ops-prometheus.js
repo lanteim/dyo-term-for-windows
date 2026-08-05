@@ -117,7 +117,7 @@ window.WIDGETS.prometheus = {
             $("#_pr_meta").textContent = "polling " + esc(base()) + "…";
             try {
                 await Promise.all([loadAlerts(), runQuery()]);
-                if (alive) $("#_pr_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                if (alive) $("#_pr_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } finally { busy = false; }
         };
 

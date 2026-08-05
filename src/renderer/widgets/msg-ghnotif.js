@@ -56,7 +56,7 @@ window.WIDGETS.msg_ghnotif = {
                     list.appendChild(div);
                 });
                 if (!items.length) list.innerHTML = `<span style="color:var(--accent2)">inbox zero 🎉</span>`;
-                $("#_gn_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_gn_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_gn_list").innerHTML = `<span style="color:var(--danger)">${esc(e && e.message)}</span>`;
             } finally { busy = false; }

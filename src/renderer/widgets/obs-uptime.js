@@ -82,7 +82,7 @@ window.WIDGETS.obs_uptime = {
                     row.innerHTML = `<span>${dot}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis" title="${esc(r.url)}${r.err ? " — " + esc(r.err) : ""}">${esc(r.url)}</span><span style="color:${r.up ? "var(--text-dim)" : "var(--danger)"};font-variant-numeric:tabular-nums">${esc(info)}</span>`;
                     list.appendChild(row);
                 });
-                $("#_up_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_up_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } finally { busy = false; }
         };
 

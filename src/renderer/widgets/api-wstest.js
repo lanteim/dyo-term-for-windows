@@ -35,7 +35,7 @@ window.WIDGETS.api_wstest = {
         window.dyo.settings.get().then(s => { if (alive && s && s[SKEY]) $("#_ws_url").value = s[SKEY]; });
 
         const add = (dir, text, color) => {
-            const t = new Date().toLocaleTimeString();
+            const t = new Date().toLocaleTimeString(window.I18N.locale());
             rows.push(`<div style="padding:2px 4px;border-bottom:1px solid var(--border);white-space:pre-wrap;word-break:break-all"><span style="color:var(--text-dim)">${esc(t)}</span> <span style="color:${color}">${esc(dir)}</span> ${esc(text)}</div>`);
             if (rows.length > 200) rows = rows.slice(-200);
             const el = $("#_ws_log"); el.innerHTML = rows.join(""); el.scrollTop = el.scrollHeight;

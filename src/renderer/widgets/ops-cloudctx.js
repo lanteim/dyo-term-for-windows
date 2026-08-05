@@ -81,7 +81,7 @@ window.WIDGETS.cloudctx = {
                     loadGcp().catch(() => set("#_cc_gcp", "error", false)),
                     loadAzure().catch(() => set("#_cc_az", "error", false))
                 ]);
-                if (alive) $("#_cc_meta").textContent = new Date().toLocaleTimeString();
+                if (alive) $("#_cc_meta").textContent = new Date().toLocaleTimeString(window.I18N.locale());
             } finally { busy = false; }
         };
         $("#_cc_go").onclick = tick;

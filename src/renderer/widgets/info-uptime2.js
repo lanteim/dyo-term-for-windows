@@ -46,7 +46,7 @@ window.WIDGETS = window.WIDGETS || {};
                 if (baseUptime == null) return;
                 const cur = baseUptime + (Date.now() - baseAt) / 1000;
                 $("._up").textContent = fmt(cur);
-                $("._secs").textContent = Math.floor(cur).toLocaleString();
+                $("._secs").textContent = Math.floor(cur).toLocaleString(window.I18N.locale());
             };
 
             const fetch = async () => {
@@ -59,7 +59,7 @@ window.WIDGETS = window.WIDGETS || {};
                     baseUptime = t.uptime;
                     baseAt = Date.now();
                     bootDate = new Date(Date.now() - t.uptime * 1000);
-                    $("._boot").textContent = bootDate.toLocaleString();
+                    $("._boot").textContent = bootDate.toLocaleString(window.I18N.locale());
                     $("._msg").textContent = "";
                     paint();
                 } catch (e) { if (alive) $("._msg").textContent = "error"; } finally { busy = false; }

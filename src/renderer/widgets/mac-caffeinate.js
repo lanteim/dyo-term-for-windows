@@ -66,7 +66,7 @@ window.WIDGETS.mac_caffeinate = {
                     $("#_caf_detail").textContent = "";
                     $("#_caf_msg").textContent = "";
                 }
-                $("#_caf_meta").textContent = new Date().toLocaleTimeString();
+                $("#_caf_meta").textContent = new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_caf_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`; $("#_caf_meta").textContent = ""; }
             } finally { busy = false; }

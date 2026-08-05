@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,4 +29,4 @@ try {
     await delay(2000);
     console.log("AFTER term.paste:", JSON.stringify(await dump()));
 } catch (e) { console.error("probe err:", e.message); }
-finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(800); try { app.kill("SIGKILL"); } catch (e) {} process.exit(0); }
+finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(800); try { app.kill("SIGKILL"); } catch (e) {} try { execSync('pkill -9 -f \"remote-debugging-port=9377"'); } catch (e) {} process.exit(0); }

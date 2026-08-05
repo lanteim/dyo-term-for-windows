@@ -18,7 +18,7 @@ window.WIDGETS.dbx_ch_parts = {
         let connId = null, timer = null, alive = true, busy = false;
 
         const fmtBytes = n => { n = Number(n) || 0; const u = ["B", "KB", "MB", "GB", "TB", "PB"]; let i = 0; while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; } return (i === 0 ? n : n.toFixed(1)) + " " + u[i]; };
-        const fmtNum = n => (Number(n) || 0).toLocaleString("en-US");
+        const fmtNum = n => (Number(n) || 0).toLocaleString(window.I18N.locale());
 
         body.innerHTML = `
             <div style="display:flex;flex-direction:column;height:100%;gap:8px;font-size:12px">

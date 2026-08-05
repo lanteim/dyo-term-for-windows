@@ -91,7 +91,7 @@ window.WIDGETS.obs_loki = {
                     list.appendChild(div);
                 });
                 if (!result.length) list.innerHTML = `<span style="color:var(--text-dim)">no matching streams</span>`;
-                $("#_lk_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_lk_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_lk_list").innerHTML = `<span style="color:var(--danger)">${esc(e && e.message)}</span>`; }
             } finally { busy = false; }

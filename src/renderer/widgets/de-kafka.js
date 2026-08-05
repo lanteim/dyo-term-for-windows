@@ -68,7 +68,7 @@ window.WIDGETS.de_kafka = {
                         `<div style="padding:3px 8px;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">▸ ${esc(t)}</div>`
                     ).join("");
                 }
-                $("#_kf_st").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_kf_st").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_kf_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`;
             } finally { busy = false; }

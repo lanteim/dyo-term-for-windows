@@ -84,7 +84,7 @@ window.WIDGETS.o2_influx = {
                 $("#_msg").textContent = j.message || "";
                 $("#_name").textContent = j.name || "influxdb";
                 $("#_ver").textContent = j.version || (r.headers && r.headers["x-influxdb-version"]) || "—";
-                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_dot").style.color = "var(--danger)"; $("#_status").textContent = "error"; $("#_msg").textContent = (e && e.message) || ""; }
             } finally { busy = false; }

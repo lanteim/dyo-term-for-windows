@@ -70,7 +70,7 @@ window.WIDGETS.msg_jira = {
                     list.appendChild(div);
                 });
                 if (!arr.length) list.innerHTML = `<span style="color:var(--accent2)">no open issues assigned to you</span>`;
-                $("#_jr_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_jr_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_jr_list").innerHTML = `<span style="color:var(--danger)">${esc(e && e.message)}</span>`;
             } finally { busy = false; }

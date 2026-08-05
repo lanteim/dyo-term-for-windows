@@ -75,7 +75,7 @@ window.WIDGETS.o2_promtargets = {
                     const c = t.health === "up" ? "#3fb950" : "var(--danger)";
                     return `<div style="display:flex;gap:8px;padding:3px 8px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="color:${c}">●</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(job)}</span><span style="color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;max-width:45%">${esc(inst)}</span></div>`;
                 }).join("");
-                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_list").innerHTML = `<div style="padding:8px;color:var(--danger)">${esc(e && e.message)}</div>`;
             } finally { busy = false; }

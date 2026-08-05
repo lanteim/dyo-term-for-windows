@@ -117,7 +117,7 @@ window.WIDGETS.ci_circleci = {
                     </div>`;
                 }).join("");
                 $("#_cc_sum").innerHTML = `<span style="color:var(--accent2)">${ok}✓</span> <span style="color:var(--danger)">${fail}✗</span> <span style="color:var(--accent)">${run}◐</span>`;
-                $("#_cc_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_cc_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_cc_list").innerHTML = `<span style="color:var(--danger)">${esc(e && e.message)}</span>`;
             } finally { busy = false; }

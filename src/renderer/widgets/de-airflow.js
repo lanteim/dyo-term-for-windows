@@ -82,7 +82,7 @@ window.WIDGETS.de_airflow = {
                     const dot = d.is_paused ? "var(--text-dim)" : "var(--accent2)";
                     return `<div style="padding:3px 8px;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:${dot}">●</span> ${esc(d.dag_id)}</div>`;
                 }).join("");
-                $("#_af_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_af_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_af_list").innerHTML = `<div style="padding:8px;color:var(--danger)">${esc(e && e.message)}</div>`;
             } finally { busy = false; }

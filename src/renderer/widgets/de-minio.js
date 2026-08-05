@@ -74,7 +74,7 @@ window.WIDGETS.de_minio = {
                     const dt = b.date ? String(b.date).slice(0, 10) : "";
                     return `<div style="display:flex;gap:8px;padding:3px 8px;border-bottom:1px solid var(--border);white-space:nowrap">🪣 <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(b.name)}</span><span style="color:var(--text-dim)">${esc(dt)}</span></div>`;
                 }).join("");
-                $("#_mo_st").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_mo_st").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_mo_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`;
             } finally { busy = false; }

@@ -1,6 +1,6 @@
 // Screenshot the new v0.5.0 features: a richer A.Petrov graph (populated) and the
 // command palette overlay. Fake/local data only.
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,4 +49,4 @@ try {
     console.log("console errors:", errs.length ? errs.slice(0, 6).join(" | ") : "(none)");
     console.log("shots: /tmp/feat_graph.png /tmp/feat_palette.png");
 } catch (e) { console.error("features-shot fatal:", e.message); }
-finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(600); try { app.kill("SIGKILL"); } catch (e) {} process.exit(0); }
+finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(600); try { app.kill("SIGKILL"); } catch (e) {} try { execSync(`pkill -9 -f \"remote-debugging-port=${PORT}"`); } catch (e) {} process.exit(0); }

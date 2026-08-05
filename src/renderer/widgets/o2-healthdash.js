@@ -94,7 +94,7 @@ window.WIDGETS.o2_healthdash = {
                     sub.textContent = res.txt;
                 });
                 $("#_up").textContent = up; $("#_dn").textContent = dn;
-                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_meta").textContent = "error";
             } finally { busy = false; }

@@ -73,7 +73,7 @@ window.WIDGETS.aws_regionprofile = {
                 $("#_rp_reg").style.color = region ? "var(--accent)" : "var(--text-dim)";
                 $("#_rp_cred").textContent = creds || "—";
                 $("#_rp_cred").style.color = creds === "configured" ? "var(--accent2)" : "var(--text-dim)";
-                $("#_rp_meta").textContent = new Date().toLocaleTimeString();
+                $("#_rp_meta").textContent = new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) { $("#_rp_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`; $("#_rp_meta").textContent = ""; }
             } finally { busy = false; }

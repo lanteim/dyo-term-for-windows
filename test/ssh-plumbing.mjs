@@ -1,6 +1,6 @@
 // Plumbing checks for the SSH monitor path (no real remote host is contacted;
 // the ssh test targets an invalid host to confirm graceful failure).
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -61,4 +61,4 @@ try {
     let ok = true; for (const c of checks) { console.log(`  ${c.ok ? "PASS" : "FAIL"}  ${c.n}${c.d ? "  (" + c.d + ")" : ""}`); if (!c.ok) ok = false; }
     console.log(ok ? "\nSSH PLUMBING + PLAYER + QUOTE OK" : "\nFAILED");
 } catch (e) { console.error("ssh-plumbing fatal:", e.message); }
-finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(600); try { app.kill("SIGKILL"); } catch (e) {} process.exit(0); }
+finally { try { await ev(`window.dyo.win("close")`); } catch (e) {} await delay(600); try { app.kill("SIGKILL"); } catch (e) {} try { execSync(`pkill -9 -f \"remote-debugging-port=${PORT}"`); } catch (e) {} process.exit(0); }

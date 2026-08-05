@@ -65,7 +65,7 @@ window.WIDGETS.o2_jaeger = {
                 const clean = arr.filter(x => x).slice().sort();
                 if (!clean.length) $("#_list").innerHTML = `<div style="padding:8px;color:var(--text-dim)">No services.</div>`;
                 else $("#_list").innerHTML = clean.slice(0, 200).map(s => `<div style="display:flex;gap:8px;padding:3px 8px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="color:var(--accent2)">▸</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(s)}</span></div>`).join("");
-                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_list").innerHTML = `<div style="padding:8px;color:var(--danger)">${esc(e && e.message)}</div>`;
             } finally { busy = false; }

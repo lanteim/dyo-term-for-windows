@@ -48,7 +48,7 @@ window.WIDGETS.tool_timestamp = {
         const fmt = d => {
             if (isNaN(d.getTime())) return "invalid";
             if (utc) return d.toUTCString();
-            return d.toLocaleString() + " (" + Intl.DateTimeFormat().resolvedOptions().timeZone + ")";
+            return d.toLocaleString(window.I18N.locale()) + " (" + Intl.DateTimeFormat().resolvedOptions().timeZone + ")";
         };
         const runEp = () => {
             const raw = epIn.value.trim();

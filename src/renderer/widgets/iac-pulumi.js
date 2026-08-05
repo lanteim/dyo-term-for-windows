@@ -71,7 +71,7 @@ window.WIDGETS.iac_pulumi = {
                       <td style="padding:2px 6px;color:var(--text-dim)">${esc(rel(s.lastUpdate))}</td></tr>`;
                 }).join("");
                 if (!j.length) $("#_pu_rows").innerHTML = `<tr><td colspan="3" style="padding:6px;color:var(--text-dim)">No stacks yet.</td></tr>`;
-                $("#_pu_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_pu_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_pu_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`;
             } finally { busy = false; }

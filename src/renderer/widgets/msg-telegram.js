@@ -72,7 +72,7 @@ window.WIDGETS.msg_telegram = {
                     list.appendChild(div);
                 });
                 if (!arr.length) list.innerHTML = `<span style="color:var(--text-dim)">no pending updates (may be consumed by a webhook)</span>`;
-                $("#_tg_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_tg_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_tg_list").innerHTML = `<span style="color:var(--danger)">${esc(e && e.message)}</span>`;
             } finally { busy = false; }

@@ -73,7 +73,7 @@ window.WIDGETS.de_dbt = {
                     const et = (res.execution_time != null) ? Number(res.execution_time).toFixed(2) + "s" : "";
                     return `<div style="display:flex;gap:8px;padding:3px 8px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="color:${stCol(res.status)}">●</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(uid)}</span><span style="color:var(--text-dim);width:56px;text-align:right">${esc(et)}</span></div>`;
                 }).join("");
-                $("#_dbt_st").textContent = "loaded " + new Date().toLocaleTimeString();
+                $("#_dbt_st").textContent = "loaded " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_dbt_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`;
             } finally { busy = false; }

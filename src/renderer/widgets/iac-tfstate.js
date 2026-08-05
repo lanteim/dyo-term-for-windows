@@ -58,7 +58,7 @@ window.WIDGETS.iac_tfstate = {
                     more.textContent = "… +" + (lines.length - 200) + " more";
                     list.appendChild(more);
                 }
-                $("#_ts_meta").textContent = "updated " + new Date().toLocaleTimeString();
+                $("#_ts_meta").textContent = "updated " + new Date().toLocaleTimeString(window.I18N.locale());
             } catch (e) {
                 if (alive) $("#_ts_msg").innerHTML = `<span style="color:var(--danger)">error: ${esc(e && e.message)}</span>`;
             } finally { busy = false; }
