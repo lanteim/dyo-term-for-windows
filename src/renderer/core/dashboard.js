@@ -78,6 +78,7 @@ class Dashboard {
             margin: dp0.margin,
             float: false,
             handle: ".widget > header",
+            resizable: { handles: "all" }, // n,e,s,w + corners; gridstack default is se-only
             staticGrid: true,
             animate: true
         }, this.gridEl);
