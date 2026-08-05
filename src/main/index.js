@@ -552,7 +552,29 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => app.quit());
-app.on("before-quit", () => { killAllPtys(); db.closeAll(); });
+// Quit in two phases: kill the shells, wait for node-pty to deliver their exit
+// events, then exit. Tearing down the node env while a pty exit watcher is
+// still in flight makes its ThreadSafeFunction throw inside FreeEnvironment
+// (Napi::Error::ThrowAsJavaScriptException -> abort, SIGABRT on macOS).
+let quitting = false;
+app.on("before-quit", e => {
+    if (quitting) return;
+    quitting = true;
+    e.preventDefault();
+    db.closeAll();
+    const procs = [...ptys.values()].map(t => t.proc);
+    ptys.clear();
+    ptyGen++;
+    let finished = false;
+    const finish = () => { if (!finished) { finished = true; app.exit(0); } };
+    let left = procs.length;
+    if (!left) return finish();
+    setTimeout(finish, 500); // a shell that ignores SIGHUP must not block quit
+    for (const p of procs) {
+        try { p.onExit(() => { if (--left <= 0) finish(); }); } catch (err) { if (--left <= 0) finish(); }
+        try { p.kill(); } catch (err) { /* already dead; timeout covers us */ }
+    }
+});
 process.on("uncaughtException", err => {
     console.error(err);
 });
